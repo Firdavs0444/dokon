@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Do'kon Nazorati</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2A20;
+  --ink-2:#25392C;
+  --paper:#EFE7D2;
+  --paper-2:#E4D8B8;
+  --paper-3:#D8CBA4;
+  --brass:#B9852E;
+  --brass-lt:#E0AE55;
+  --plus:#2F6B4F;
+  --plus-lt:#3E8A66;
+  --minus:#A23E34;
+  --minus-lt:#C24E42;
+  --line:#C4B48A;
+  --ink-text:#241C10;
+  --muted:#6B6047;
+  --radius:14px;
+  --shadow: 0 6px 18px rgba(27,42,32,0.14);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink-text);
+  font-family:'Manrope',sans-serif;
+  min-height:100vh;
+  padding-bottom:120px;
+}
+::selection{background:var(--brass-lt);color:var(--ink);}
+
+/* ---------- HEADER / LEDGER ---------- */
+header.top{
+  background:var(--ink);
+  color:var(--paper);
+  padding:18px 20px 26px;
+  position:relative;
+  z-index:5;
+}
+.brandrow{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:14px;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:800;
+  letter-spacing:0.5px;
+  font-size:15px;
+  text-transform:uppercase;
+  color:var(--brass-lt);
+}
+.brand .dot{width:8px;height:8px;border-radius:50%;background:var(--plus-lt);box-shadow:0 0 8px var(--plus-lt);}
+.hist-btn{
+  background:transparent;
+  border:1.5px solid rgba(239,231,210,0.35);
+  color:var(--paper);
+  padding:8px 14px;
+  border-radius:100px;
+  font-family:'Manrope',sans-serif;
+  font-weight:600;
+  font-size:13px;
+  cursor:pointer;
+  transition:.15s;
+}
+.hist-btn:hover{border-color:var(--brass-lt);color:var(--brass-lt);}
+
+.ledger{
+  text-align:left;
+}
+.ledger .label{
+  font-size:12px;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:rgba(239,231,210,0.55);
+  margin-bottom:4px;
+  font-weight:700;
+}
+.ledger .amount{
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:clamp(34px,9vw,54px);
+  letter-spacing:1px;
+  color:var(--brass-lt);
+  display:inline-flex;
+  align-items:baseline;
+  gap:8px;
+  transition:opacity .25s ease;
+}
+.ledger .amount .sum{transition:transform .2s ease;}
+.ledger .amount .cur{font-size:0.42em;color:rgba(239,231,210,0.6);font-family:'Manrope',sans-serif;font-weight:700;}
+.ledger .sub{
+  margin-top:4px;
+  font-size:12.5px;
+  color:rgba(239,231,210,0.5);
+}
+.pulse{animation:pulse .4s ease;}
+@keyframes pulse{
+  0%{transform:scale(1);}
+  30%{transform:scale(1.06);}
+  100%{transform:scale(1);}
+}
+
+/* torn receipt edge */
+.tear{
+  position:absolute;
+  left:0;right:0;bottom:-1px;
+  height:14px;
+  background:
+    linear-gradient(135deg, var(--paper) 7px, transparent 0) 0 0,
+    linear-gradient(-135deg, var(--paper) 7px, transparent 0) 0 0;
+  background-size:14px 14px;
+  background-repeat:repeat-x;
+}
+
+/* ---------- CONTROLS ---------- */
+.controls{
+  max-width:1100px;
+  margin:22px auto 10px;
+  padding:0 18px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.search-wrap{
+  flex:1;
+  min-width:180px;
+  position:relative;
+}
+.search-wrap input{
+  width:100%;
+  padding:12px 14px 12px 38px;
+  border-radius:100px;
+  border:1.5px solid var(--line);
+  background:var(--paper-2);
+  font-family:'Manrope',sans-serif;
+  font-size:14px;
+  color:var(--ink-text);
+  outline:none;
+}
+.search-wrap input:focus{border-color:var(--brass);}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.5;}
+.add-btn{
+  background:var(--ink);
+  color:var(--paper);
+  border:none;
+  padding:12px 20px;
+  border-radius:100px;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  display:flex;align-items:center;gap:8px;
+  transition:.15s;
+  white-space:nowrap;
+}
+.add-btn:hover{background:var(--ink-2);}
+.add-btn .plus-ico{color:var(--brass-lt);font-size:17px;}
+.add-btn.cash{background:var(--brass);color:#fff;}
+.add-btn.cash:hover{background:var(--brass-lt);}
+.add-btn.cash .plus-ico{color:#fff;}
+
+/* ---------- PRODUCT GRID ---------- */
+.grid{
+  max-width:1100px;
+  margin:10px auto;
+  padding:6px 18px 18px;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:14px;
+}
+.card{
+  background:var(--paper-2);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+  position:relative;
+  transition:.15s;
+}
+.card.has-qty{
+  background:#F4EED8;
+  border-color:var(--brass);
+  box-shadow:var(--shadow);
+}
+.card-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:6px;
+  margin-bottom:10px;
+}
+.card-name{
+  font-weight:800;
+  font-size:16px;
+  line-height:1.25;
+  padding-right:4px;
+}
+.unit-badge{
+  font-size:10.5px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  padding:3px 8px;
+  border-radius:100px;
+  background:var(--ink);
+  color:var(--paper);
+  flex-shrink:0;
+}
+.edit-ico{
+  position:absolute;
+  top:12px;right:12px;
+  background:none;
+  border:none;
+  cursor:pointer;
+  opacity:.45;
+  padding:4px;
+  transition:.15s;
+}
+.edit-ico:hover{opacity:1;}
+.card-price{
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:15px;
+  color:var(--ink-text);
+}
+.card-price span{
+  font-family:'Manrope',sans-serif;
+  font-weight:500;
+  font-size:11.5px;
+  color:var(--muted);
+}
+.card-stock{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:2px;
+  margin-bottom:12px;
+}
+.card-stock b{color:var(--ink-text);}
+.qty-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.stepper{
+  display:flex;
+  align-items:center;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:100px;
+  overflow:hidden;
+}
+.stepper button{
+  width:34px;height:34px;
+  border:none;
+  background:transparent;
+  font-size:18px;
+  font-weight:800;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:.12s;
+}
+.stepper button.minus{color:var(--minus);}
+.stepper button.minus:hover{background:var(--minus);color:#fff;}
+.stepper button.plus{color:var(--plus);}
+.stepper button.plus:hover{background:var(--plus);color:#fff;}
+.stepper .qty{
+  min-width:44px;
+  text-align:center;
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:14px;
+  cursor:text;
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
+  padding:0 4px;
+  height:34px;
+  line-height:34px;
+}
+.card-subtotal{
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:13.5px;
+  color:var(--brass);
+  white-space:nowrap;
+}
+.empty-state{
+  grid-column:1/-1;
+  text-align:center;
+  padding:50px 16px;
+  color:var(--muted);
+}
+.empty-state b{display:block;color:var(--ink-text);font-size:17px;margin-bottom:6px;}
+
+/* ---------- CART BAR ---------- */
+.cartbar{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  z-index:20;
+  transform:translateY(110%);
+  transition:transform .25s cubic-bezier(.2,.8,.2,1);
+}
+.cartbar.show{transform:translateY(0);}
+.cartbar-inner{
+  max-width:1100px;
+  margin:0 auto;
+  background:var(--ink);
+  color:var(--paper);
+  border-radius:18px 18px 0 0;
+  padding:14px 18px 18px;
+  box-shadow:0 -10px 30px rgba(0,0,0,0.25);
+}
+.tear-top{
+  position:relative;
+  height:0;
+}
+.tear-top::before{
+  content:'';
+  position:absolute;
+  left:0;right:0;top:-13px;
+  height:14px;
+  background:
+    linear-gradient(45deg, var(--ink) 7px, transparent 0) 0 0,
+    linear-gradient(-45deg, var(--ink) 7px, transparent 0) 0 0;
+  background-size:14px 14px;
+  background-repeat:repeat-x;
+  max-width:1100px;
+  margin:0 auto;
+}
+.cart-items{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:10px;
+  margin-bottom:10px;
+  border-bottom:1px dashed rgba(239,231,210,0.25);
+}
+.cart-chip{
+  flex-shrink:0;
+  background:rgba(239,231,210,0.08);
+  border:1px solid rgba(239,231,210,0.2);
+  border-radius:100px;
+  padding:6px 12px;
+  font-size:12.5px;
+  font-weight:600;
+  white-space:nowrap;
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+.cart-chip .q{font-family:'Space Mono',monospace;color:var(--brass-lt);}
+.cart-foot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.cart-total{
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:22px;
+  color:var(--brass-lt);
+}
+.cart-total .lbl{
+  display:block;
+  font-family:'Manrope',sans-serif;
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:rgba(239,231,210,0.5);
+  margin-bottom:2px;
+}
+.cart-actions{display:flex;gap:8px;}
+.btn-cancel{
+  background:transparent;
+  border:1.5px solid rgba(239,231,210,0.3);
+  color:var(--paper);
+  padding:12px 16px;
+  border-radius:100px;
+  font-weight:700;
+  font-size:13.5px;
+  cursor:pointer;
+}
+.btn-cancel:hover{border-color:var(--minus-lt);color:var(--minus-lt);}
+.btn-debt{
+  background:transparent;
+  border:1.5px solid var(--brass-lt);
+  color:var(--brass-lt);
+  padding:12px 16px;
+  border-radius:100px;
+  font-weight:700;
+  font-size:13.5px;
+  cursor:pointer;
+}
+.btn-debt:hover{background:var(--brass-lt);color:var(--ink);}
+.btn-pay{
+  background:var(--plus);
+  border:none;
+  color:#fff;
+  padding:12px 22px;
+  border-radius:100px;
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+  display:flex;align-items:center;gap:6px;
+  transition:.15s;
+}
+.btn-pay:hover{background:var(--plus-lt);}
+
+/* ---------- MODAL ---------- */
+.overlay{
+  position:fixed;inset:0;
+  background:rgba(27,42,32,0.55);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  z-index:50;
+  padding:0;
+}
+.overlay.show{display:flex;}
+@media(min-width:640px){
+  .overlay{align-items:center;}
+}
+.modal{
+  background:var(--paper);
+  width:100%;
+  max-width:440px;
+  border-radius:18px 18px 0 0;
+  padding:22px 20px 24px;
+  max-height:88vh;
+  overflow-y:auto;
+  box-shadow:0 -10px 40px rgba(0,0,0,0.3);
+}
+@media(min-width:640px){
+  .modal{border-radius:18px;}
+}
+.modal h2{
+  margin:0 0 18px;
+  font-size:19px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.modal h2 button{
+  background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);
+}
+.field{margin-bottom:16px;}
+.field label{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+.field input{
+  width:100%;
+  padding:12px 14px;
+  border-radius:10px;
+  border:1.5px solid var(--line);
+  background:var(--paper-2);
+  font-family:'Manrope',sans-serif;
+  font-size:15px;
+  color:var(--ink-text);
+  outline:none;
+}
+.field input:focus{border-color:var(--brass);}
+.unit-switch{
+  display:flex;
+  background:var(--paper-2);
+  border:1.5px solid var(--line);
+  border-radius:10px;
+  padding:3px;
+  gap:3px;
+}
+.unit-switch button{
+  flex:1;
+  border:none;
+  background:transparent;
+  padding:10px;
+  border-radius:7px;
+  font-weight:700;
+  font-size:13.5px;
+  cursor:pointer;
+  color:var(--muted);
+  transition:.15s;
+}
+.unit-switch button.active{
+  background:var(--ink);
+  color:var(--paper);
+}
+.modal-actions{
+  display:flex;
+  gap:10px;
+  margin-top:20px;
+}
+.btn-primary{
+  flex:1;
+  background:var(--plus);
+  color:#fff;
+  border:none;
+  padding:13px;
+  border-radius:10px;
+  font-weight:800;
+  font-size:14.5px;
+  cursor:pointer;
+}
+.btn-primary:hover{background:var(--plus-lt);}
+.btn-danger{
+  background:transparent;
+  border:1.5px solid var(--minus);
+  color:var(--minus);
+  padding:13px 16px;
+  border-radius:10px;
+  font-weight:700;
+  font-size:13.5px;
+  cursor:pointer;
+}
+.btn-danger:hover{background:var(--minus);color:#fff;}
+
+/* history */
+.tabs{display:flex;gap:6px;margin-bottom:16px;}
+.tabs button{
+  flex:1;
+  padding:9px;
+  border-radius:100px;
+  border:1.5px solid var(--line);
+  background:var(--paper-2);
+  font-weight:700;
+  font-size:13px;
+  cursor:pointer;
+  color:var(--muted);
+}
+.tabs button.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+.day-row{
+  border:1px solid var(--line);
+  border-radius:12px;
+  margin-bottom:10px;
+  overflow:hidden;
+  background:var(--paper-2);
+}
+.day-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:13px 14px;
+  cursor:pointer;
+}
+.day-head .d{font-weight:700;font-size:14px;}
+.day-head .t{font-family:'Space Mono',monospace;font-weight:700;color:var(--brass);}
+.day-body{
+  display:none;
+  padding:0 14px 12px;
+  border-top:1px dashed var(--line);
+}
+.day-body.open{display:block;}
+.receipt{
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+}
+.receipt:last-child{border-bottom:none;}
+.receipt .rtime{color:var(--muted);font-size:11.5px;margin-bottom:4px;font-family:'Space Mono',monospace;}
+.receipt .ritem{display:flex;justify-content:space-between;padding:2px 0;}
+.receipt .rtotal{
+  display:flex;justify-content:space-between;
+  font-weight:800;margin-top:4px;padding-top:4px;border-top:1px dashed var(--line);
+}
+.no-data{text-align:center;color:var(--muted);padding:30px 10px;font-size:13.5px;}
+.receipt.manual{background:rgba(185,133,46,0.08);border-radius:8px;padding:10px;border-bottom:none;margin-bottom:6px;}
+.receipt.manual .rtag{display:inline-block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;background:var(--brass);color:#fff;padding:2px 7px;border-radius:100px;margin-bottom:5px;}
+.sold-summary{
+  display:flex;flex-direction:column;gap:8px;
+  margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed var(--line);
+}
+.sold-summary-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;}
+.sold-summary-row .nm{font-weight:700;}
+.sold-summary-row .qv{color:var(--muted);font-size:12px;}
+.sold-summary-row .rv{font-family:'Space Mono',monospace;font-weight:700;color:var(--brass);}
+.sold-line{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;
+}
+.sold-line:last-child{border-bottom:none;}
+.sold-line .sl-name{font-weight:700;}
+.sold-line .sl-meta{font-size:11.5px;color:var(--muted);font-family:'Space Mono',monospace;}
+.sold-line .sl-amt{font-family:'Space Mono',monospace;font-weight:700;color:var(--brass);white-space:nowrap;}
+.debtor-card{
+  border:1px solid var(--line);
+  border-radius:12px;
+  margin-bottom:10px;
+  padding:14px;
+  background:var(--paper-2);
+}
+.debtor-top{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;
+}
+.debtor-name{font-weight:800;font-size:14.5px;}
+.debtor-date{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px;}
+.debtor-note{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.debtor-items{font-size:12.5px;color:var(--ink-text);opacity:.85;margin-bottom:10px;}
+.debtor-items div{display:flex;justify-content:space-between;padding:1px 0;}
+.debtor-foot{display:flex;justify-content:space-between;align-items:center;}
+.debtor-total{font-family:'Space Mono',monospace;font-weight:800;font-size:15px;color:var(--brass);}
+.btn-settle{
+  background:var(--plus);color:#fff;border:none;
+  padding:9px 16px;border-radius:100px;font-weight:700;font-size:12.5px;cursor:pointer;
+}
+.btn-settle:hover{background:var(--plus-lt);}
+.debt-total-banner{
+  background:var(--ink);color:var(--brass-lt);
+  padding:12px 14px;border-radius:10px;
+  font-weight:700;font-size:14px;
+  margin-bottom:14px;
+  display:flex;justify-content:space-between;
+}
+
+.payment-label{
+  align-self:center;
+  font-size:12px;
+  font-weight:800;
+  color:rgba(239,231,210,0.55);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+.btn-card{
+  background:#315B83;
+  border:none;
+  color:#fff;
+  padding:12px 18px;
+  border-radius:100px;
+  font-weight:800;
+  font-size:14px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  transition:.15s;
+}
+.btn-card:hover{background:#3F74A5;}
+.kg-qty-wrap{
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.kg-qty-input{
+  width:72px;
+  height:34px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:var(--paper);
+  color:var(--ink-text);
+  text-align:center;
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:13px;
+  outline:none;
+}
+.kg-qty-input:focus{border-color:var(--brass);}
+.kg-unit{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+
+.payment-group{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:6px;
+}
+.payment-buttons{
+  display:flex;
+  gap:8px;
+}
+.payment-buttons button{
+  min-width:125px;
+}
+
+
+.payment-history-summary{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+}
+.payment-history-badge{
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:800;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--line);
+}
+
+
+.cart-total-block{display:flex;flex-direction:column;gap:5px}
+.payment-totals{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:rgba(239,231,210,.62);font-weight:700}
+.payment-totals span{padding:4px 7px;border:1px solid var(--line);border-radius:7px}
+.payment-totals b{color:var(--ink-text)}
+.history-payment-summary{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.history-payment-summary .payment-history-badge{padding:7px 10px;border-radius:8px}
+
+
+.product-edit-btn{
+  position:absolute;
+  top:10px;
+  right:44px;
+  border:1px solid var(--line);
+  background:var(--paper);
+  color:var(--ink-text);
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+  transition:.15s;
+}
+.product-edit-btn:hover{
+  border-color:var(--brass);
+  color:var(--brass);
+  transform:translateY(-1px);
+}
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brandrow">
+    <div class="brand"><span class="dot"></span>Do'kon Nazorati</div>
+    <div style="display:flex;gap:8px;">
+      <button class="hist-btn" id="debtorsBtn">Qarzdorlar</button>
+      <button class="hist-btn" id="historyBtn">Tarix</button>
+    </div>
+  </div>
+  <div class="ledger">
+    <div class="label">Bugungi hisob</div>
+    <div class="amount"><span class="sum" id="todayTotal">0</span><span class="cur">so'm</span></div>
+    <div class="sub" id="todayDate"></div>
+  </div>
+  <div class="tear"></div>
+</header>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="Mahsulot qidirish...">
+  </div>
+  <button class="add-btn" id="addProductBtn"><span class="plus-ico">+</span> Mahsulot</button>
+  <button class="add-btn cash" id="addCashBtn"><span class="plus-ico">+</span> Naqd pul</button>
+</div>
+
+<div class="grid" id="productGrid"></div>
+
+<div class="cartbar" id="cartBar">
+  <div class="tear-top"></div>
+  <div class="cartbar-inner">
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-foot">
+      <div class="cart-total-block">
+        <div class="cart-total"><span class="lbl">Jami</span><span id="cartTotal">0</span> so'm</div>
+        <div class="payment-totals">
+          <span>💵 Naqd: <b id="cashTotal">0</b></span>
+          <span>💳 Karta: <b id="cardTotal">0</b></span>
+          <span>Jami hisob: <b id="allPaymentTotal">0</b></span>
+        </div>
+      </div>
+      <div class="cart-actions">
+        <button class="btn-cancel" id="cancelCartBtn">Bekor qilish</button>
+        <button class="btn-debt" id="debtBtn">Qarzga</button>
+        <div class="payment-group">
+          <div class="payment-label">To'lov turi</div>
+          <div class="payment-buttons">
+            <button class="btn-pay" id="cashPayBtn">💵 Naqd to'lov</button>
+            <button class="btn-card" id="cardPayBtn">💳 Karta to'lov</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT PRODUCT MODAL -->
+<div class="overlay" id="productOverlay">
+  <div class="modal">
+    <h2><span id="productModalTitle">Mahsulot qo'shish</span><button id="closeProductModal">✕</button></h2>
+    <div class="field">
+      <label>Mahsulot nomi</label>
+      <input type="text" id="pName" placeholder="Masalan: Non">
+    </div>
+    <div class="field">
+      <label>O'lchov birligi</label>
+      <div class="unit-switch">
+        <button type="button" class="active" id="unitDona" data-unit="dona">Dona</button>
+        <button type="button" id="unitKg" data-unit="kg">Kg</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Narxi (so'm)</label>
+      <input type="number" id="pPrice" placeholder="0" min="0">
+    </div>
+    <div class="field">
+      <label id="stockLabel">Qoldig'i (dona)</label>
+      <input type="number" id="pStock" placeholder="0" min="0" step="any">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="deleteProductBtn" style="display:none;">O'chirish</button>
+      <button class="btn-primary" id="saveProductBtn">Saqlash</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEBT SALE MODAL -->
+<div class="overlay" id="debtOverlay">
+  <div class="modal">
+    <h2><span>Qarzga berish</span><button id="closeDebtModal">✕</button></h2>
+    <div class="field">
+      <label>Mijoz ismi</label>
+      <input type="text" id="dName" placeholder="Masalan: Aziz aka">
+    </div>
+    <div class="field">
+      <label>Izoh (ixtiyoriy)</label>
+      <input type="text" id="dNote" placeholder="Telefon raqami yoki eslatma">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="saveDebtBtn" style="background:var(--brass);">Qarzga berish</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEBTORS MODAL -->
+<div class="overlay" id="debtorsOverlay">
+  <div class="modal">
+    <h2>Qarzdorlar<button id="closeDebtorsModal">✕</button></h2>
+    <div id="debtorsList"></div>
+  </div>
+</div>
+
+<!-- ADD CASH MODAL -->
+<div class="overlay" id="cashOverlay">
+  <div class="modal">
+    <h2><span>Naqd pul qo'shish</span><button id="closeCashModal">✕</button></h2>
+    <div class="field">
+      <label>Summa (so'm)</label>
+      <input type="number" id="cAmount" placeholder="0" min="0">
+    </div>
+    <div class="field">
+      <label>Izoh (ixtiyoriy)</label>
+      <input type="text" id="cNote" placeholder="Masalan: qarz qaytdi, boshqa daromad...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="saveCashBtn">Qo'shish</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="overlay" id="historyOverlay">
+  <div class="modal">
+    <h2>Hisob tarixi<button id="closeHistoryModal">✕</button></h2>
+    <div class="tabs">
+      <button class="active" id="tabDays" data-tab="days">Kunlar</button>
+      <button id="tabSold" data-tab="sold">Sotilgan mahsulotlar</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============ SUPABASE API LAYER ============ */
+const SUPABASE_URL = 'https://xtndqovjotrnwzkfasin.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_E1AcedP81UUPUPwZ2DO6zw_KjK1lzbT';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+const mockApi = (() => {
+  const CART_KEY = 'ds_cart';
+
+  function readCart(){
+    try{
+      const raw = localStorage.getItem(CART_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function writeCart(cart){ localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+
+  function normalizeProduct(p){
+    return {
+      id: String(p.id),
+      name: p.name,
+      unit: p.unit,
+      price: Number(p.price || 0),
+      stock: Number(p.stock || 0),
+      createdAt: p.created_at
+    };
+  }
+
+  function normalizeSale(sale, items){
+    const created = sale.created_at ? new Date(sale.created_at) : new Date();
+    const date = sale.date || (
+      created.getFullYear() + '-' +
+      String(created.getMonth()+1).padStart(2,'0') + '-' +
+      String(created.getDate()).padStart(2,'0')
+    );
+    const time = sale.time || (
+      String(created.getHours()).padStart(2,'0') + ':' +
+      String(created.getMinutes()).padStart(2,'0')
+    );
+    return {
+      id: String(sale.id),
+      date, time,
+      items: items || [],
+      total: Number(sale.total || 0),
+      paymentMethod: sale.payment_type || 'cash',
+      isDebt: !!sale.is_debt,
+      paid: sale.paid !== false,
+      customerName: sale.customer_name || '',
+      note: sale.note || '',
+      manual: !!sale.manual,
+      paidDate: sale.paid_date || '',
+      paidTime: sale.paid_time || ''
+    };
+  }
+
+  async function getProducts(){
+    const {data,error}=await supabaseClient.from('products').select('*').order('id',{ascending:true});
+    if(error) throw error;
+    return (data||[]).map(normalizeProduct);
+  }
+
+  async function addProduct(product){
+    const {data,error}=await supabaseClient.from('products').insert({
+      name:product.name, price:Number(product.price), unit:product.unit, stock:Number(product.stock)
+    }).select().single();
+    if(error) throw error;
+    return normalizeProduct(data);
+  }
+
+  async function updateProduct(id,patch){
+    const dbPatch={};
+    if(patch.name!==undefined) dbPatch.name=patch.name;
+    if(patch.price!==undefined) dbPatch.price=Number(patch.price);
+    if(patch.unit!==undefined) dbPatch.unit=patch.unit;
+    if(patch.stock!==undefined) dbPatch.stock=Number(patch.stock);
+    const {data,error}=await supabaseClient.from('products').update(dbPatch).eq('id',id).select().single();
+    if(error) throw error;
+    return normalizeProduct(data);
+  }
+
+  async function deleteProduct(id){
+    const {error}=await supabaseClient.from('products').delete().eq('id',id);
+    if(error) throw error;
+    const cart=readCart(); delete cart[String(id)]; writeCart(cart);
+    return true;
+  }
+
+  async function getSales(){
+    const {data:saleRows,error:saleError}=await supabaseClient.from('sales').select('*').order('id',{ascending:false});
+    if(saleError) throw saleError;
+    const {data:itemRows,error:itemError}=await supabaseClient.from('sale_items').select('*').order('id',{ascending:true});
+    if(itemError) throw itemError;
+
+    const grouped={};
+    (itemRows||[]).forEach(it=>{
+      const key=String(it.sale_id);
+      if(!grouped[key]) grouped[key]=[];
+      grouped[key].push({
+        productId:it.product_id==null?'':String(it.product_id),
+        name:it.product_name,
+        unit:it.unit,
+        price:Number(it.quantity)?Number(it.subtotal)/Number(it.quantity):0,
+        qty:Number(it.quantity||0),
+        subtotal:Number(it.subtotal||0)
+      });
+    });
+    return (saleRows||[]).map(s=>normalizeSale(s,grouped[String(s.id)]||[]));
+  }
+
+  async function addSale(sale){
+    const {data,error}=await supabaseClient.from('sales').insert({
+      total:Number(sale.total||0),
+      payment_type:sale.paymentMethod||'cash',
+      date:sale.date||null,
+      time:sale.time||null,
+      is_debt:!!sale.isDebt,
+      paid:sale.paid!==false,
+      customer_name:sale.customerName||'',
+      note:sale.note||'',
+      manual:!!sale.manual
+    }).select().single();
+    if(error) throw error;
+
+    if(sale.items && sale.items.length){
+      const rows=sale.items.map(it=>({
+        sale_id:data.id,
+        product_id:it.productId?Number(it.productId):null,
+        product_name:it.name,
+        unit:it.unit,
+        quantity:Number(it.qty),
+        subtotal:Number(it.subtotal)
+      }));
+      const {error:itemError}=await supabaseClient.from('sale_items').insert(rows);
+      if(itemError) throw itemError;
+    }
+    return normalizeSale(data,sale.items||[]);
+  }
+
+  async function updateSale(id,patch){
+    const dbPatch={};
+    if(patch.paid!==undefined) dbPatch.paid=!!patch.paid;
+    if(patch.paidDate!==undefined) dbPatch.paid_date=patch.paidDate||null;
+    if(patch.paidTime!==undefined) dbPatch.paid_time=patch.paidTime||null;
+    if(patch.paymentMethod!==undefined) dbPatch.payment_type=patch.paymentMethod;
+    const {data,error}=await supabaseClient.from('sales').update(dbPatch).eq('id',id).select().single();
+    if(error) throw error;
+    return normalizeSale(data,[]);
+  }
+
+  return {
+    getProducts, addProduct, updateProduct, deleteProduct, getSales, addSale, updateSale,
+    getCart:async()=>readCart(),
+    saveCart:async cart=>{writeCart(cart);return cart;}
+  };
+})();
+
+/* ============ APP STATE ============ */
+let products = [];
+let sales = [];
+let cart = {}; // { productId: qty }
+let editingProductId = null;
+let searchTerm = '';
+
+/* ============ HELPERS ============ */
+function formatSum(n){
+  n = Math.round(n * 100) / 100;
+  return n.toLocaleString('ru-RU').replace(/,/g, ' ');
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function formatDateReadable(dstr){
+  const [y,m,d] = dstr.split('-');
+  const months = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr'];
+  return `${parseInt(d)}-${months[parseInt(m)-1]} ${y}`;
+}
+function step(unit){ return unit === 'kg' ? 0 : 1; }
+function fmtQty(qty, unit){
+  if(unit === 'kg'){
+    const grams = Math.round(qty * 1000);
+    return grams % 1000 === 0 ? String(grams / 1000) : (grams / 1000).toFixed(3).replace(/0+$/,'').replace(/\.$/,'');
+  }
+  return qty.toString();
+}
+function fmtGrams(qty){
+  return String(Math.round(qty * 1000));
+}
+
+/* ============ RENDER: PRODUCT GRID ============ */
+function renderGrid(){
+  const grid = document.getElementById('productGrid');
+  const term = searchTerm.trim().toLowerCase();
+  const filtered = products.filter(p => p.name.toLowerCase().includes(term));
+
+  if(filtered.length === 0){
+    grid.innerHTML = `<div class="empty-state"><b>Mahsulot topilmadi</b>${products.length===0 ? "Yuqoridagi tugma orqali birinchi mahsulotni qo'shing" : "Qidiruvga mos mahsulot yo'q"}</div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const qty = cart[p.id] || 0;
+    const subtotal = qty * p.price;
+    return `
+    <div class="card ${qty>0?'has-qty':''}" data-id="${p.id}">
+      <button class="edit-ico" data-edit="${p.id}" title="Tahrirlash">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
+      <button class="product-edit-btn" data-edit="${p.id}" type="button">
+        ✏️ O'zgartirish
+      </button>
+      <div class="card-top">
+        <div class="card-name">${escapeHtml(p.name)}</div>
+      </div>
+      <span class="unit-badge">${p.unit === 'kg' ? 'KG' : 'DONA'}</span>
+      <div class="card-price" style="margin-top:10px;">${formatSum(p.price)} <span>so'm / ${p.unit === 'kg' ? 'kg' : 'dona'}</span></div>
+      <div class="card-stock">Qoldig'i: <b>${fmtQty(p.stock, p.unit)} ${p.unit === 'kg' ? 'kg' : 'dona'}</b></div>
+      <div class="qty-row">
+        ${
+          p.unit === 'kg'
+          ? `<div class="kg-qty-wrap">
+               <input class="kg-qty-input" data-kgqty="${p.id}" type="number" min="0" max="${p.stock * 1000}" step="1" value="${qty > 0 ? fmtGrams(qty) : ''}" placeholder="gramm" title="Grammini o'zingiz kiriting">
+               <span class="kg-unit">gr</span>
+             </div>`
+          : `<div class="stepper">
+               <button class="minus" data-minus="${p.id}">−</button>
+               <span class="qty" data-qtyfield="${p.id}" title="Aniq miqdor kiritish">${fmtQty(qty, p.unit)}</span>
+               <button class="plus" data-plus="${p.id}">+</button>
+             </div>`
+        }
+        ${qty > 0 ? `<div class="card-subtotal">${formatSum(subtotal)} so'm</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* ============ RENDER: CART BAR ============ */
+function renderCartBar(){
+  const bar = document.getElementById('cartBar');
+  const entries = Object.entries(cart).filter(([id,q]) => q > 0);
+
+  if(entries.length === 0){
+    bar.classList.remove('show');
+    const today = todayStr();
+    const paidToday = sales.filter(s => !s.isDebt && s.paid !== false && s.date === today);
+    const cash = paidToday.filter(s => (s.paymentMethod || 'cash') === 'cash').reduce((sum,s) => sum + Number(s.total || 0), 0);
+    const card = paidToday.filter(s => s.paymentMethod === 'card').reduce((sum,s) => sum + Number(s.total || 0), 0);
+    document.getElementById('cashTotal').textContent = formatSum(cash);
+    document.getElementById('cardTotal').textContent = formatSum(card);
+    document.getElementById('allPaymentTotal').textContent = formatSum(cash + card);
+    return;
+  }
+  bar.classList.add('show');
+
+  const itemsHtml = entries.map(([id, qty]) => {
+    const p = products.find(pp => String(pp.id) === String(id));
+    if(!p) return '';
+    return `<div class="cart-chip">${escapeHtml(p.name)} <span class="q">×${fmtQty(qty,p.unit)}${p.unit==='kg'?'kg':''}</span></div>`;
+  }).join('');
+  document.getElementById('cartItems').innerHTML = itemsHtml;
+
+  const total = entries.reduce((sum,[id,qty]) => {
+    const p = products.find(pp => String(pp.id) === String(id));
+    return sum + (p ? p.price * qty : 0);
+  }, 0);
+  document.getElementById('cartTotal').textContent = formatSum(total);
+
+  const today = todayStr();
+  const paidToday = sales.filter(s => !s.isDebt && s.paid !== false && s.date === today);
+  const cash = paidToday.filter(s => (s.paymentMethod || 'cash') === 'cash').reduce((sum,s) => sum + Number(s.total || 0), 0);
+  const card = paidToday.filter(s => s.paymentMethod === 'card').reduce((sum,s) => sum + Number(s.total || 0), 0);
+  document.getElementById('cashTotal').textContent = formatSum(cash);
+  document.getElementById('cardTotal').textContent = formatSum(card);
+  document.getElementById('allPaymentTotal').textContent = formatSum(cash + card);
+}
+
+/* ============ RENDER: TODAY TOTAL ============ */
+function renderTodayTotal(){
+  const today = todayStr();
+  const total = sales
+    .filter(s => (!s.isDebt && s.date === today) || (s.isDebt && s.paid && s.paidDate === today))
+    .reduce((sum,s) => sum + s.total, 0);
+  const el = document.getElementById('todayTotal');
+  el.textContent = formatSum(total);
+  el.classList.remove('pulse');
+  void el.offsetWidth;
+  el.classList.add('pulse');
+  document.getElementById('todayDate').textContent = formatDateReadable(today);
+
+  const debtCount = sales.filter(s => s.isDebt && !s.paid).length;
+  const debtBtn = document.getElementById('debtorsBtn');
+  if(debtBtn) debtBtn.textContent = debtCount > 0 ? `Qarzdorlar (${debtCount})` : 'Qarzdorlar';
+}
+
+/* ============ CART LOGIC ============ */
+async function changeQty(productId, delta){
+  const p = products.find(pp => pp.id === productId);
+  if(!p) return;
+  const cur = cart[productId] || 0;
+  let next = Math.round((cur + delta) * 100) / 100;
+  if(next < 0) next = 0;
+  if(next > p.stock) next = p.stock;
+  if(next === 0) delete cart[productId]; else cart[productId] = next;
+  await mockApi.saveCart(cart);
+  renderGrid();
+  renderCartBar();
+}
+
+async function setKgQtyFromGrams(productId, gramsValue){
+  const p = products.find(pp => pp.id === productId);
+  if(!p || p.unit !== 'kg') return;
+
+  let grams = parseFloat(String(gramsValue).replace(',', '.'));
+  if(!Number.isFinite(grams) || grams < 0) grams = 0;
+
+  const maxGrams = p.stock * 1000;
+  if(grams > maxGrams) grams = maxGrams;
+
+  const kg = Math.round((grams / 1000) * 1000) / 1000;
+
+  if(kg === 0) delete cart[productId];
+  else cart[productId] = kg;
+
+  await mockApi.saveCart(cart);
+  renderGrid();
+  renderCartBar();
+}
+
+async function setExactQty(productId){
+  const p = products.find(pp => pp.id === productId);
+  if(!p) return;
+  const cur = cart[productId] || 0;
+  const input = prompt(`"${p.name}" uchun miqdor kiriting (${p.unit === 'kg' ? 'kg' : 'dona'}):`, cur);
+  if(input === null) return;
+  let val = parseFloat(input.replace(',', '.'));
+  if(isNaN(val) || val < 0) val = 0;
+  if(val > p.stock) val = p.stock;
+  if(val === 0) delete cart[productId]; else cart[productId] = Math.round(val*100)/100;
+  await mockApi.saveCart(cart);
+  renderGrid();
+  renderCartBar();
+}
+
+async function cancelCart(){
+  cart = {};
+  await mockApi.saveCart(cart);
+  renderGrid();
+  renderCartBar();
+}
+
+async function collectCartItems(){
+  const entries = Object.entries(cart).filter(([id,q]) => q > 0);
+  const items = [];
+  let total = 0;
+  for(const [id, qty] of entries){
+    const p = products.find(pp => String(pp.id) === String(id));
+    if(!p) continue;
+    const subtotal = qty * p.price;
+    total += subtotal;
+    items.push({ productId: p.id, name: p.name, unit: p.unit, price: p.price, qty, subtotal });
+  }
+  return { items, total };
+}
+
+async function finalizeSale({ isDebt = false, customerName = '', note = '', paymentMethod = 'cash' } = {}){
+  const { items, total } = await collectCartItems();
+  if(items.length === 0) return;
+
+  // stock always decreases immediately since goods leave the shop
+  for(const it of items){
+    const p = products.find(pp => pp.id === it.productId);
+    if(p) await mockApi.updateProduct(p.id, { stock: Math.max(0, Math.round((p.stock - it.qty)*100)/100) });
+  }
+
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const date = todayStr();
+
+  if(isDebt){
+    await mockApi.addSale({ date, time, items, total, isDebt:true, paid:false, customerName, note });
+  }else{
+    await mockApi.addSale({ date, time, items, total, isDebt:false, paid:true, paymentMethod });
+  }
+
+  cart = {};
+  await mockApi.saveCart(cart);
+  await loadAll();
+}
+
+async function payCart(paymentMethod = 'cash'){
+  await finalizeSale({ isDebt:false, paymentMethod });
+}
+
+/* ============ PRODUCT MODAL ============ */
+function openProductModal(product){
+  editingProductId = product ? product.id : null;
+  document.getElementById('productModalTitle').textContent = product ? "Mahsulotni tahrirlash" : "Mahsulot qo'shish";
+  document.getElementById('pName').value = product ? product.name : '';
+  document.getElementById('pPrice').value = product ? product.price : '';
+  document.getElementById('pStock').value = product ? product.stock : '';
+  setUnitSwitch(product ? product.unit : 'dona');
+  document.getElementById('deleteProductBtn').style.display = product ? 'block' : 'none';
+  document.getElementById('productOverlay').classList.add('show');
+}
+function closeProductModal(){
+  document.getElementById('productOverlay').classList.remove('show');
+  editingProductId = null;
+}
+function setUnitSwitch(unit){
+  document.getElementById('unitDona').classList.toggle('active', unit === 'dona');
+  document.getElementById('unitKg').classList.toggle('active', unit === 'kg');
+  document.getElementById('stockLabel').textContent = `Qoldig'i (${unit === 'kg' ? 'kg' : 'dona'})`;
+}
+function getSelectedUnit(){
+  return document.getElementById('unitKg').classList.contains('active') ? 'kg' : 'dona';
+}
+
+async function saveProduct(){
+  const name = document.getElementById('pName').value.trim();
+  const price = parseFloat(document.getElementById('pPrice').value);
+  const stock = parseFloat(document.getElementById('pStock').value);
+  const unit = getSelectedUnit();
+
+  if(!name){ alert("Mahsulot nomini kiriting"); return; }
+  if(isNaN(price) || price < 0){ alert("Narxni to'g'ri kiriting"); return; }
+  if(isNaN(stock) || stock < 0){ alert("Qoldiqni to'g'ri kiriting"); return; }
+
+  if(editingProductId){
+    await mockApi.updateProduct(editingProductId, { name, price, stock, unit });
+  } else {
+    await mockApi.addProduct({ name, price, stock, unit });
+  }
+  closeProductModal();
+  await loadAll();
+}
+
+async function deleteProduct(){
+  if(!editingProductId) return;
+  if(!confirm("Bu mahsulotni o'chirmoqchimisiz?")) return;
+  await mockApi.deleteProduct(editingProductId);
+  closeProductModal();
+  await loadAll();
+}
+
+/* ============ DEBT SALE (Qarzga) ============ */
+function openDebtModal(){
+  document.getElementById('dName').value = '';
+  document.getElementById('dNote').value = '';
+  document.getElementById('debtOverlay').classList.add('show');
+}
+function closeDebtModal(){
+  document.getElementById('debtOverlay').classList.remove('show');
+}
+async function saveDebt(){
+  const customerName = document.getElementById('dName').value.trim();
+  const note = document.getElementById('dNote').value.trim();
+  if(!customerName){ alert("Mijoz ismini kiriting"); return; }
+  closeDebtModal();
+  await finalizeSale({ isDebt:true, customerName, note });
+}
+
+/* ============ QARZDORLAR (DEBTORS) ============ */
+function renderDebtors(){
+  const container = document.getElementById('debtorsList');
+  const unpaid = sales.filter(s => s.isDebt && !s.paid).sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+
+  if(unpaid.length === 0){
+    container.innerHTML = `<div class="no-data">Hozircha qarzdorlar yo'q.</div>`;
+    return;
+  }
+
+  const totalDebt = unpaid.reduce((s,x) => s + x.total, 0);
+  const banner = `<div class="debt-total-banner"><span>Jami qarzlar</span><span>${formatSum(totalDebt)} so'm</span></div>`;
+
+  const rows = unpaid.map(sale => `
+    <div class="debtor-card">
+      <div class="debtor-top">
+        <div>
+          <div class="debtor-name">${escapeHtml(sale.customerName || 'Mijoz')}</div>
+          <div class="debtor-date">${formatDateReadable(sale.date)} · ${sale.time}</div>
+        </div>
+      </div>
+      ${sale.note ? `<div class="debtor-note">${escapeHtml(sale.note)}</div>` : ''}
+      <div class="debtor-items">
+        ${sale.items.map(it => `<div><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit==='kg'?'kg':''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
+      </div>
+      <div class="debtor-foot">
+        <div class="debtor-total">${formatSum(sale.total)} so'm</div>
+        <button class="btn-settle" data-settle="${sale.id}">✓ To'ladi</button>
+      </div>
+    </div>
+  `).join('');
+
+  container.innerHTML = banner + rows;
+}
+
+async function settleDebt(saleId){
+  const now = new Date();
+  await mockApi.updateSale(saleId, {
+    paid: true,
+    paidDate: todayStr(),
+    paidTime: String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0')
+  });
+  await loadAll();
+  renderDebtors();
+}
+function openCashModal(){
+  document.getElementById('cAmount').value = '';
+  document.getElementById('cNote').value = '';
+  document.getElementById('cashOverlay').classList.add('show');
+}
+function closeCashModal(){
+  document.getElementById('cashOverlay').classList.remove('show');
+}
+async function saveCash(){
+  const amount = parseFloat(document.getElementById('cAmount').value);
+  const note = document.getElementById('cNote').value.trim();
+  if(isNaN(amount) || amount <= 0){ alert("Summani to'g'ri kiriting"); return; }
+
+  const now = new Date();
+  await mockApi.addSale({
+    date: todayStr(),
+    time: String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0'),
+    items: [],
+    total: amount,
+    manual: true,
+    note
+  });
+  closeCashModal();
+  await loadAll();
+}
+
+/* ============ HISTORY MODAL ============ */
+let historyTab = 'days';
+
+function renderHistory(){
+  if(historyTab === 'days') renderHistoryDays();
+  else renderHistorySold();
+}
+
+function renderHistoryDays(){
+  const container = document.getElementById('historyList');
+  const today = todayStr();
+  const byDate = {};
+  sales.forEach(s => {
+    if(s.isDebt && !s.paid) return; // unpaid debts don't count as received cash yet
+    const effDate = s.isDebt ? s.paidDate : s.date;
+    if(!byDate[effDate]) byDate[effDate] = [];
+    byDate[effDate].push(s);
+  });
+  const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a));
+
+  if(dates.length === 0){
+    container.innerHTML = `<div class="no-data">Hali to'lovlar tarixi yo'q.</div>`;
+    return;
+  }
+
+  container.innerHTML = dates.map(date => {
+    const daySales = byDate[date].sort((a,b) => (a.isDebt ? a.paidTime : a.time).localeCompare(b.isDebt ? b.paidTime : b.time));
+    const dayTotal = daySales.reduce((s,x) => s + x.total, 0);
+    const dayCash = daySales.filter(x => !x.isDebt && (x.paymentMethod || 'cash') === 'cash').reduce((s,x) => s + Number(x.total || 0), 0);
+    const dayCard = daySales.filter(x => !x.isDebt && x.paymentMethod === 'card').reduce((s,x) => s + Number(x.total || 0), 0);
+    const receipts = daySales.map(sale => {
+      if(sale.manual){
+        return `
+        <div class="receipt manual">
+          <span class="rtag">Naqd pul</span>
+          <div class="rtime">${sale.time}${sale.note ? ' · ' + escapeHtml(sale.note) : ''}</div>
+          <div class="rtotal"><span>Qo'shildi</span><span>${formatSum(sale.total)} so'm</span></div>
+        </div>`;
+      }
+      if(sale.isDebt){
+        return `
+        <div class="receipt manual">
+          <span class="rtag">Qarz to'landi</span>
+          <div class="rtime">${sale.paidTime} · ${escapeHtml(sale.customerName || 'Mijoz')}</div>
+          ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit==='kg'?'kg':''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
+          <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm${sale.paymentMethod === "card" ? " · 💳 Karta" : (sale.isDebt ? " · 🟠 Qarz" : " · 💵 Naqd")}</span></div>
+        </div>`;
+      }
+      return `
+      <div class="receipt">
+        <div class="rtime">${sale.time}</div>
+        ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit==='kg'?'kg':''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
+        <div class="rtotal">
+          <span>Jami</span>
+          <span>${formatSum(sale.total)} so'm</span>
+        </div>
+        <div class="payment-history-summary">
+          <span class="payment-history-badge ${paymentClass(sale)}">${paymentLabel(sale)}</span>
+        </div>
+      </div>
+    `;
+    }).join('');
+    return `
+      <div class="day-row">
+        <div class="day-head" data-day="${date}">
+          <span class="d">${formatDateReadable(date)}</span>
+          <span class="t">${formatSum(dayTotal)} so'm</span>
+        </div>
+        <div class="history-payment-summary">
+          <span class="payment-history-badge payment-cash">💵 Naqd: ${formatSum(dayCash)} so'm</span>
+          <span class="payment-history-badge payment-card">💳 Karta: ${formatSum(dayCard)} so'm</span>
+          <span class="payment-history-badge">Jami: ${formatSum(dayTotal)} so'm</span>
+        </div>
+        <div class="day-body" id="daybody-${date}">${receipts}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderHistorySold(){
+  const container = document.getElementById('historyList');
+
+  // flatten every sold line item (excludes manual cash entries) across all sales
+  const lines = [];
+  sales.forEach(sale => {
+    if(sale.manual) return;
+    sale.items.forEach(it => lines.push({ ...it, date: sale.date, time: sale.time }));
+  });
+
+  if(lines.length === 0){
+    container.innerHTML = `<div class="no-data">Hali sotilgan mahsulotlar yo'q.</div>`;
+    return;
+  }
+
+  // aggregate totals per product
+  const agg = {};
+  lines.forEach(it => {
+    if(!agg[it.name]) agg[it.name] = { unit: it.unit, qty: 0, revenue: 0 };
+    agg[it.name].qty += it.qty;
+    agg[it.name].revenue += it.subtotal;
+  });
+  const aggRows = Object.entries(agg)
+    .sort((a,b) => b[1].revenue - a[1].revenue)
+    .map(([name, v]) => `
+      <div class="sold-summary-row">
+        <span class="nm">${escapeHtml(name)} <span class="qv">(${fmtQty(v.qty, v.unit)}${v.unit==='kg'?'kg':' dona'})</span></span>
+        <span class="rv">${formatSum(v.revenue)} so'm</span>
+      </div>
+    `).join('');
+
+  // chronological list, newest first
+  const chronoRows = lines
+    .sort((a,b) => (b.date + b.time).localeCompare(a.date + a.time))
+    .map(it => `
+      <div class="sold-line">
+        <div>
+          <div class="sl-name">${escapeHtml(it.name)}</div>
+          <div class="sl-meta">${formatDateReadable(it.date)} · ${it.time} · ${fmtQty(it.qty, it.unit)}${it.unit==='kg'?'kg':' dona'}</div>
+        </div>
+        <div class="sl-amt">${formatSum(it.subtotal)} so'm</div>
+      </div>
+    `).join('');
+
+  container.innerHTML = `<div class="sold-summary">${aggRows}</div>${chronoRows}`;
+}
+
+
+function paymentLabel(sale){
+  if(sale.isDebt) return '🟠 Qarz';
+  return sale.paymentMethod === 'card' ? '💳 Karta' : '💵 Naqd';
+}
+function paymentClass(sale){
+  if(sale.isDebt) return 'payment-debt';
+  return sale.paymentMethod === 'card' ? 'payment-card' : 'payment-cash';
+}
+
+
+async function migrateOldLocalDataToSupabase(){
+  const flag='supabase_migrated_v1';
+  if(localStorage.getItem(flag)==='1') return;
+
+  try{
+    const {count:pc,error:pe}=await supabaseClient.from('products').select('*',{count:'exact',head:true});
+    if(pe) throw pe;
+
+    const oldProductsRaw=localStorage.getItem('ds_products');
+    const oldProducts=oldProductsRaw?JSON.parse(oldProductsRaw):[];
+    const idMap={};
+
+    if((pc||0)===0 && oldProducts.length){
+      for(const p of oldProducts){
+        const {data,error}=await supabaseClient.from('products').insert({
+          name:p.name, price:Number(p.price||0), unit:p.unit||'dona', stock:Number(p.stock||0)
+        }).select().single();
+        if(error) throw error;
+        idMap[String(p.id)]=String(data.id);
+      }
+
+      const oldSalesRaw=localStorage.getItem('ds_sales');
+      const oldSales=oldSalesRaw?JSON.parse(oldSalesRaw):[];
+
+      for(const s of oldSales){
+        const {data:sale,error:se}=await supabaseClient.from('sales').insert({
+          total:Number(s.total||0),
+          payment_type:s.paymentMethod||'cash',
+          date:s.date||null,
+          time:s.time||null,
+          is_debt:!!s.isDebt,
+          paid:s.paid!==false,
+          customer_name:s.customerName||'',
+          note:s.note||'',
+          manual:!!s.manual,
+          paid_date:s.paidDate||null,
+          paid_time:s.paidTime||null
+        }).select().single();
+        if(se) throw se;
+
+        if(Array.isArray(s.items) && s.items.length){
+          const rows=s.items.map(it=>({
+            sale_id:sale.id,
+            product_id:idMap[String(it.productId)] ? Number(idMap[String(it.productId)]) : null,
+            product_name:it.name,
+            unit:it.unit,
+            quantity:Number(it.qty||0),
+            subtotal:Number(it.subtotal||0)
+          }));
+          const {error:ie}=await supabaseClient.from('sale_items').insert(rows);
+          if(ie) throw ie;
+        }
+      }
+    }
+
+    localStorage.setItem(flag,'1');
+  }catch(err){
+    console.warn('Local maʼlumotlarni Supabase ga ko‘chirish xatosi:',err);
+  }
+}
+
+/* ============ DATA LOADING ============ */
+async function loadAll(){
+  await migrateOldLocalDataToSupabase();
+  [products, sales, cart] = await Promise.all([
+    mockApi.getProducts(),
+    mockApi.getSales(),
+    mockApi.getCart()
+  ]);
+  // clean cart of stale product ids
+  Object.keys(cart).forEach(id => { if(!products.find(p => String(p.id) === String(id))) delete cart[id]; });
+  renderGrid();
+  renderCartBar();
+  renderTodayTotal();
+}
+
+/* ============ EVENTS ============ */
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchTerm = e.target.value;
+  renderGrid();
+});
+
+document.getElementById('addProductBtn').addEventListener('click', () => openProductModal(null));
+document.getElementById('closeProductModal').addEventListener('click', closeProductModal);
+document.getElementById('productOverlay').addEventListener('click', e => { if(e.target.id === 'productOverlay') closeProductModal(); });
+document.getElementById('unitDona').addEventListener('click', () => setUnitSwitch('dona'));
+document.getElementById('unitKg').addEventListener('click', () => setUnitSwitch('kg'));
+document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
+document.getElementById('deleteProductBtn').addEventListener('click', deleteProduct);
+
+document.getElementById('cancelCartBtn').addEventListener('click', cancelCart);
+document.getElementById('cashPayBtn').addEventListener('click', () => payCart('cash'));
+document.getElementById('cardPayBtn').addEventListener('click', () => payCart('card'));
+document.getElementById('debtBtn').addEventListener('click', openDebtModal);
+document.getElementById('closeDebtModal').addEventListener('click', closeDebtModal);
+document.getElementById('debtOverlay').addEventListener('click', e => { if(e.target.id === 'debtOverlay') closeDebtModal(); });
+document.getElementById('saveDebtBtn').addEventListener('click', saveDebt);
+
+document.getElementById('debtorsBtn').addEventListener('click', () => {
+  renderDebtors();
+  document.getElementById('debtorsOverlay').classList.add('show');
+});
+document.getElementById('closeDebtorsModal').addEventListener('click', () => {
+  document.getElementById('debtorsOverlay').classList.remove('show');
+});
+document.getElementById('debtorsOverlay').addEventListener('click', e => { if(e.target.id === 'debtorsOverlay') document.getElementById('debtorsOverlay').classList.remove('show'); });
+document.getElementById('debtorsList').addEventListener('click', e => {
+  const btn = e.target.closest('[data-settle]');
+  if(!btn) return;
+  settleDebt(btn.dataset.settle);
+});
+
+document.getElementById('addCashBtn').addEventListener('click', openCashModal);
+document.getElementById('closeCashModal').addEventListener('click', closeCashModal);
+document.getElementById('cashOverlay').addEventListener('click', e => { if(e.target.id === 'cashOverlay') closeCashModal(); });
+document.getElementById('saveCashBtn').addEventListener('click', saveCash);
+
+document.getElementById('historyBtn').addEventListener('click', () => {
+  historyTab = 'days';
+  document.getElementById('tabDays').classList.add('active');
+  document.getElementById('tabSold').classList.remove('active');
+  renderHistory();
+  document.getElementById('historyOverlay').classList.add('show');
+});
+document.getElementById('closeHistoryModal').addEventListener('click', () => {
+  document.getElementById('historyOverlay').classList.remove('show');
+});
+document.getElementById('historyOverlay').addEventListener('click', e => { if(e.target.id === 'historyOverlay') document.getElementById('historyOverlay').classList.remove('show'); });
+document.querySelector('.tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-tab]');
+  if(!btn) return;
+  historyTab = btn.dataset.tab;
+  document.getElementById('tabDays').classList.toggle('active', historyTab === 'days');
+  document.getElementById('tabSold').classList.toggle('active', historyTab === 'sold');
+  renderHistory();
+});
+
+document.getElementById('historyList').addEventListener('click', e => {
+  const head = e.target.closest('.day-head');
+  if(!head) return;
+  const date = head.dataset.day;
+  document.getElementById('daybody-' + date).classList.toggle('open');
+});
+
+
+document.getElementById('productGrid').addEventListener('change', e => {
+  const input = e.target.closest('[data-kgqty]');
+  if(!input) return;
+  setKgQtyFromGrams(input.dataset.kgqty, input.value);
+});
+
+document.getElementById('productGrid').addEventListener('click', e => {
+  const plusBtn = e.target.closest('[data-plus]');
+  const minusBtn = e.target.closest('[data-minus]');
+  const editBtn = e.target.closest('[data-edit]');
+  const qtyField = e.target.closest('[data-qtyfield]');
+  const kgQty = e.target.closest('[data-kgqty]');
+
+  if(plusBtn){
+    const id = plusBtn.dataset.plus;
+    const p = products.find(pp => String(pp.id) === String(id));
+    changeQty(id, step(p.unit));
+  } else if(minusBtn){
+    const id = minusBtn.dataset.minus;
+    const p = products.find(pp => String(pp.id) === String(id));
+    changeQty(id, -step(p.unit));
+  } else if(editBtn){
+    const id = editBtn.dataset.edit;
+    const p = products.find(pp => String(pp.id) === String(id));
+    if(p) openProductModal(p);
+  } else if(qtyField){
+    setExactQty(qtyField.dataset.qtyfield);
+  } else if(kgQty){
+    kgQty.focus();
+    kgQty.select();
+  }
+});
+
+/* ============ DAILY REFRESH ============ */
+setInterval(renderTodayTotal, 60000);
+
+/* ============ INIT ============ */
+loadAll().catch(err => {
+  console.error('Supabase xatosi:', err);
+  alert("Supabase ulanishida xatolik: " + (err.message || err));
+});
+</script>
+</body>
+</html>
