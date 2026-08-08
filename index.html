@@ -736,6 +736,118 @@ header.top{
   transform:translateY(-1px);
 }
 
+
+.total-tools{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px}
+.total-tool-btn{
+  border:1px solid var(--line);
+  background:var(--paper);
+  color:var(--ink-text);
+  padding:6px 10px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.total-tool-btn.subtract:hover{border-color:var(--brass);color:var(--brass)}
+.total-tool-btn.reset:hover{border-color:#b85b5b;color:#b85b5b}
+.small-modal{max-width:430px}
+.adjust-preview{
+  margin:8px 0 14px;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  font-size:13px;
+}
+.adjust-preview b{font-family:'Space Mono',monospace}
+
+
+.card-price{
+  margin-top:5px;
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+}
+.today-summary{
+  margin:8px 0;
+  padding:10px 12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:rgba(255,255,255,.025);
+}
+.today-title{
+  font-size:12px;
+  font-weight:900;
+  margin-bottom:7px;
+}
+.today-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+}
+.today-grid > div{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:7px 8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+}
+.today-grid span{
+  font-size:10px;
+  color:var(--muted);
+}
+.today-grid b{
+  font-family:'Space Mono',monospace;
+  font-size:12px;
+}
+
+
+.today-adjust{
+  display:flex;
+  gap:7px;
+  margin-top:8px;
+}
+.today-adjust-btn{
+  border:1px solid var(--line);
+  background:var(--paper);
+  color:var(--ink-text);
+  padding:7px 10px;
+  border-radius:8px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.today-adjust-btn:hover{border-color:var(--brass);color:var(--brass)}
+.today-adjust-btn.reset:hover{border-color:#b85b5b;color:#b85b5b}
+.today-after{
+  display:flex;
+  justify-content:space-between;
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px dashed var(--line);
+  font-size:11px;
+}
+.today-after b{font-family:'Space Mono',monospace}
+
+
+.money-action{
+  border:1px solid var(--line);
+  background:var(--paper);
+  color:var(--ink-text);
+  padding:10px 14px;
+  border-radius:10px;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+  margin-left:8px;
+}
+.money-action.subtract:hover{border-color:var(--brass);color:var(--brass)}
+.money-action.reset:hover{border-color:#b85b5b;color:#b85b5b}
+@media(max-width:700px){
+  .money-action{margin-left:0;margin-top:8px}
+}
+
+.today-summary .today-adjust{display:none !important;}
 </style>
 </head>
 <body>
@@ -763,6 +875,8 @@ header.top{
   </div>
   <button class="add-btn" id="addProductBtn"><span class="plus-ico">+</span> Mahsulot</button>
   <button class="add-btn cash" id="addCashBtn"><span class="plus-ico">+</span> Naqd pul</button>
+  <button class="money-action subtract" id="todaySubtractBtn2" type="button">− Pul ayirish</button>
+  <button class="money-action reset" id="todayResetBtn2" type="button">↺ Reset</button>
 </div>
 
 <div class="grid" id="productGrid"></div>
@@ -774,6 +888,26 @@ header.top{
     <div class="cart-foot">
       <div class="cart-total-block">
         <div class="cart-total"><span class="lbl">Jami</span><span id="cartTotal">0</span> so'm</div>
+        <div class="total-tools">
+          <button class="total-tool-btn subtract" id="subtractTotalBtn">− Pul ayirish</button>
+          <button class="total-tool-btn reset" id="resetTotalBtn">↺ Reset</button>
+        </div>
+        <div class="today-summary">
+          <div class="today-title">📊 Bugungi topilgan pul</div>
+          <div class="today-grid">
+            <div><span>💵 Naqd</span><b id="todayCash">0 so'm</b></div>
+            <div><span>💳 Karta</span><b id="todayCard">0 so'm</b></div>
+            <div><span>🧾 Jami</span><b id="todaySummaryTotal">0 so'm</b></div>
+          </div>
+          <div class="today-adjust">
+            <button class="today-adjust-btn" id="todaySubtractBtn">− Pul ayirish</button>
+            <button class="today-adjust-btn reset" id="todayResetBtn">↺ Reset</button>
+          </div>
+          <div class="today-after">
+            <span>Qolgan topilgan pul</span>
+            <b id="todayNet">0 so'm</b>
+          </div>
+        </div>
         <div class="payment-totals">
           <span>💵 Naqd: <b id="cashTotal">0</b></span>
           <span>💳 Karta: <b id="cardTotal">0</b></span>
@@ -791,6 +925,49 @@ header.top{
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="overlay" id="todayAdjustOverlay">
+  <div class="modal small-modal">
+    <h2><span>Bugungi puldan ayirish</span><button id="closeTodayAdjust">✕</button></h2>
+    <div class="field">
+      <label>Qancha pul ayiriladi?</label>
+      <input type="number" id="todayAdjustAmount" min="0" step="1" placeholder="Masalan: 30000">
+    </div>
+    <div class="field">
+      <label>Izoh (ixtiyoriy)</label>
+      <input type="text" id="todayAdjustNote" placeholder="Masalan: xarajat">
+    </div>
+    <div class="adjust-preview">
+      Bugungi jami: <b id="todayAdjustCurrent">0</b> so'm
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelTodayAdjust">Bekor qilish</button>
+      <button class="btn-pay" id="saveTodayAdjust">− Ayirish</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOTAL ADJUSTMENT MODAL -->
+<div class="overlay" id="adjustOverlay">
+  <div class="modal small-modal">
+    <h2><span>Jami hisobdan pul ayirish</span><button id="closeAdjustModal">✕</button></h2>
+    <div class="field">
+      <label>Qancha pul ayiriladi?</label>
+      <input type="number" id="adjustAmount" min="0" step="1" placeholder="Masalan: 5000">
+    </div>
+    <div class="field">
+      <label>Izoh (ixtiyoriy)</label>
+      <input type="text" id="adjustNote" placeholder="Masalan: chegirma">
+    </div>
+    <div class="adjust-preview">Hozirgi jami: <b id="adjustCurrentTotal">0</b> so'm</div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="cancelAdjustBtn">Bekor qilish</button>
+      <button class="btn-pay" id="saveAdjustBtn">− Ayirish</button>
     </div>
   </div>
 </div>
@@ -1041,7 +1218,9 @@ const mockApi = (() => {
 /* ============ APP STATE ============ */
 let products = [];
 let sales = [];
-let cart = {}; // { productId: qty }
+let cart = {};
+let cartAdjustment = 0;
+let todayMoneyAdjustment = Number(localStorage.getItem('todayMoneyAdjustment_' + todayStr()) || 0);
 let editingProductId = null;
 let searchTerm = '';
 
@@ -1112,7 +1291,8 @@ function renderGrid(){
                <button class="plus" data-plus="${p.id}">+</button>
              </div>`
         }
-        ${qty > 0 ? `<div class="card-subtotal">${formatSum(subtotal)} so'm</div>` : ''}
+        ${qty > 0 ? `<div class="card-price">${formatSum(p.price)} so'm/${p.unit}</div>
+             <div class="card-subtotal">${formatSum(subtotal)} so'm</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1149,10 +1329,12 @@ function renderCartBar(){
   }).join('');
   document.getElementById('cartItems').innerHTML = itemsHtml;
 
-  const total = entries.reduce((sum,[id,qty]) => {
+  const grossTotal = entries.reduce((sum,[id,qty]) => {
     const p = products.find(pp => String(pp.id) === String(id));
     return sum + (p ? p.price * qty : 0);
   }, 0);
+  cartAdjustment = Math.min(Math.max(0, Number(cartAdjustment) || 0), grossTotal);
+  const total = Math.max(0, grossTotal - cartAdjustment);
   document.getElementById('cartTotal').textContent = formatSum(total);
 
   const today = todayStr();
@@ -1194,6 +1376,7 @@ async function changeQty(productId, delta){
   await mockApi.saveCart(cart);
   renderGrid();
   renderCartBar();
+  renderTodaySummary();
 }
 
 async function setKgQtyFromGrams(productId, gramsValue){
@@ -1233,6 +1416,7 @@ async function setExactQty(productId){
 
 async function cancelCart(){
   cart = {};
+  cartAdjustment = 0;
   await mockApi.saveCart(cart);
   renderGrid();
   renderCartBar();
@@ -1241,19 +1425,21 @@ async function cancelCart(){
 async function collectCartItems(){
   const entries = Object.entries(cart).filter(([id,q]) => q > 0);
   const items = [];
-  let total = 0;
+  let grossTotal = 0;
   for(const [id, qty] of entries){
     const p = products.find(pp => String(pp.id) === String(id));
     if(!p) continue;
     const subtotal = qty * p.price;
-    total += subtotal;
+    grossTotal += subtotal;
     items.push({ productId: p.id, name: p.name, unit: p.unit, price: p.price, qty, subtotal });
   }
-  return { items, total };
+  const discount = Math.min(Math.max(0, Number(cartAdjustment) || 0), grossTotal);
+  const total = Math.max(0, grossTotal - discount);
+  return { items, total, grossTotal, discount };
 }
 
 async function finalizeSale({ isDebt = false, customerName = '', note = '', paymentMethod = 'cash' } = {}){
-  const { items, total } = await collectCartItems();
+  const { items, total, discount } = await collectCartItems();
   if(items.length === 0) return;
 
   // stock always decreases immediately since goods leave the shop
@@ -1269,16 +1455,138 @@ async function finalizeSale({ isDebt = false, customerName = '', note = '', paym
   if(isDebt){
     await mockApi.addSale({ date, time, items, total, isDebt:true, paid:false, customerName, note });
   }else{
-    await mockApi.addSale({ date, time, items, total, isDebt:false, paid:true, paymentMethod });
+    await mockApi.addSale({ date, time, items, total, isDebt:false, paid:true, paymentMethod, discount: Number(discount || 0) });
   }
 
   cart = {};
+  cartAdjustment = 0;
   await mockApi.saveCart(cart);
   await loadAll();
 }
 
 async function payCart(paymentMethod = 'cash'){
   await finalizeSale({ isDebt:false, paymentMethod });
+}
+
+
+
+function getTodayGrossTotal(){
+  const today = todayStr();
+  return sales.reduce((sum, s) => {
+    if(s.manual) return sum;
+    if(s.isDebt && !s.paid) return sum;
+    const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
+    if(date !== today) return sum;
+    return sum + (Number(s.total) || 0);
+  }, 0);
+}
+
+function openTodayAdjustModal(){
+  const total = getTodayGrossTotal();
+  if(total <= 0){
+    alert("Bugun hali topilgan pul yo'q.");
+    return;
+  }
+  document.getElementById('todayAdjustAmount').value = '';
+  document.getElementById('todayAdjustNote').value = '';
+  document.getElementById('todayAdjustCurrent').textContent = formatSum(
+    Math.max(0, total - todayMoneyAdjustment)
+  );
+  document.getElementById('todayAdjustOverlay').classList.add('show');
+}
+
+function closeTodayAdjustModal(){
+  document.getElementById('todayAdjustOverlay').classList.remove('show');
+}
+
+function saveTodayAdjustment(){
+  const total = getTodayGrossTotal();
+  let amount = Number(document.getElementById('todayAdjustAmount').value);
+
+  if(!Number.isFinite(amount) || amount < 0){
+    alert("Summani to'g'ri kiriting.");
+    return;
+  }
+
+  const currentNet = Math.max(0, total - (Number(todayMoneyAdjustment) || 0));
+  if(amount > currentNet){
+    amount = currentNet;
+  }
+
+  todayMoneyAdjustment = Math.min(
+    total,
+    Math.round(((Number(todayMoneyAdjustment) || 0) + amount) * 100) / 100
+  );
+  localStorage.setItem('todayMoneyAdjustment_' + todayStr(), String(todayMoneyAdjustment));
+  closeTodayAdjustModal();
+  renderTodaySummary();
+}
+
+function resetTodayMoney(){
+  const today = todayStr();
+  const key = 'todayMoneyAdjustment_' + today;
+  const total = getTodayGrossTotal();
+
+  if(confirm("Bugungi topilgan pulni 0 qilishni xohlaysizmi?")){
+    todayMoneyAdjustment = total;
+    localStorage.setItem(key, String(todayMoneyAdjustment));
+    renderTodaySummary();
+  }
+}
+
+function getCurrentCartGrossTotal(){
+  return Object.entries(cart).filter(([id,q]) => q > 0).reduce((sum,[id,qty]) => {
+    const p = products.find(pp => String(pp.id) === String(id));
+    return sum + (p ? Number(p.price) * Number(qty) : 0);
+  }, 0);
+}
+
+function openAdjustModal(){
+  const gross = getCurrentCartGrossTotal();
+  if(gross <= 0){
+    alert("Avval savatga tovar qo'shing.");
+    return;
+  }
+  document.getElementById('adjustAmount').value = '';
+  document.getElementById('adjustNote').value = '';
+  document.getElementById('adjustCurrentTotal').textContent = formatSum(Math.max(0, gross - cartAdjustment));
+  document.getElementById('adjustOverlay').classList.add('show');
+}
+
+function closeAdjustModal(){
+  document.getElementById('adjustOverlay').classList.remove('show');
+}
+
+function saveAdjustment(){
+  const gross = getCurrentCartGrossTotal();
+  let amount = Number(document.getElementById('adjustAmount').value);
+  if(!Number.isFinite(amount) || amount < 0){
+    alert("Ayiriladigan summani to'g'ri kiriting.");
+    return;
+  }
+  if(amount > gross){
+    amount = gross;
+    alert("Ayirish summasi jami hisobdan katta bo'lgani uchun jami 0 so'm qilindi.");
+  }
+  cartAdjustment = Math.round(amount * 100) / 100;
+  closeAdjustModal();
+  renderCartBar();
+}
+
+async function resetCurrentTotal(){
+  const gross = getCurrentCartGrossTotal();
+  if(gross <= 0){
+    cartAdjustment = 0;
+    renderCartBar();
+    return;
+  }
+  if(confirm("Jami hisobni reset qilib, savatdagi tovarlarni ham bekor qilasizmi?")){
+    cart = {};
+    cartAdjustment = 0;
+    await mockApi.saveCart(cart);
+    renderGrid();
+    renderCartBar();
+  }
 }
 
 /* ============ PRODUCT MODAL ============ */
@@ -1422,6 +1730,47 @@ async function saveCash(){
 
 /* ============ HISTORY MODAL ============ */
 let historyTab = 'days';
+
+
+function renderTodaySummary(){
+  const today = todayStr();
+  const key = 'todayMoneyAdjustment_' + today;
+  todayMoneyAdjustment = Number(localStorage.getItem(key) || 0);
+
+  let cash = 0, card = 0, total = 0;
+
+  sales.forEach(s => {
+    if(s.manual) return;
+    if(s.isDebt && !s.paid) return;
+    const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
+    if(date !== today) return;
+
+    const amount = Number(s.total) || 0;
+    total += amount;
+
+    if(s.paymentMethod === 'card') card += amount;
+    else cash += amount;
+  });
+
+  todayMoneyAdjustment = Math.min(
+    Math.max(0, todayMoneyAdjustment),
+    total
+  );
+
+  const net = Math.max(0, total - todayMoneyAdjustment);
+
+  const cashEl = document.getElementById('todayCash');
+  const cardEl = document.getElementById('todayCard');
+  const summaryTotalEl = document.getElementById('todaySummaryTotal');
+  const headerTotalEl = document.querySelector('header .ledger #todayTotal');
+  const netEl = document.getElementById('todayNet');
+
+  if(cashEl) cashEl.textContent = formatSum(cash) + " so'm";
+  if(cardEl) cardEl.textContent = formatSum(card) + " so'm";
+  if(summaryTotalEl) summaryTotalEl.textContent = formatSum(net) + " so'm";
+  if(headerTotalEl) headerTotalEl.textContent = formatSum(net);
+  if(netEl) netEl.textContent = formatSum(net) + " so'm";
+}
 
 function renderHistory(){
   if(historyTab === 'days') renderHistoryDays();
@@ -1647,6 +1996,26 @@ document.getElementById('unitKg').addEventListener('click', () => setUnitSwitch(
 document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
 document.getElementById('deleteProductBtn').addEventListener('click', deleteProduct);
 
+
+
+document.getElementById('todaySubtractBtn2').addEventListener('click', openTodayAdjustModal);
+document.getElementById('todaySubtractBtn').addEventListener('click', openTodayAdjustModal);
+document.getElementById('closeTodayAdjust').addEventListener('click', closeTodayAdjustModal);
+document.getElementById('cancelTodayAdjust').addEventListener('click', closeTodayAdjustModal);
+document.getElementById('saveTodayAdjust').addEventListener('click', saveTodayAdjustment);
+document.getElementById('todayAdjustOverlay').addEventListener('click', e => {
+  if(e.target.id === 'todayAdjustOverlay') closeTodayAdjustModal();
+});
+
+document.getElementById('subtractTotalBtn').addEventListener('click', openAdjustModal);
+document.getElementById('resetTotalBtn').addEventListener('click', resetCurrentTotal);
+document.getElementById('closeAdjustModal').addEventListener('click', closeAdjustModal);
+document.getElementById('cancelAdjustBtn').addEventListener('click', closeAdjustModal);
+document.getElementById('saveAdjustBtn').addEventListener('click', saveAdjustment);
+document.getElementById('adjustOverlay').addEventListener('click', e => {
+  if(e.target.id === 'adjustOverlay') closeAdjustModal();
+});
+
 document.getElementById('cancelCartBtn').addEventListener('click', cancelCart);
 document.getElementById('cashPayBtn').addEventListener('click', () => payCart('cash'));
 document.getElementById('cardPayBtn').addEventListener('click', () => payCart('card'));
@@ -1743,6 +2112,15 @@ loadAll().catch(err => {
   console.error('Supabase xatosi:', err);
   alert("Supabase ulanishida xatolik: " + (err.message || err));
 });
+
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('#todayResetBtn2, #todayResetBtn');
+  if(btn){
+    e.preventDefault();
+    resetTodayMoney();
+  }
+});
+
 </script>
 </body>
 </html>
