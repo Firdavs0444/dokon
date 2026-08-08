@@ -1351,17 +1351,30 @@ function renderTodayTotal(){
   const today = todayStr();
   const total = sales
     .filter(s => (!s.isDebt && s.date === today) || (s.isDebt && s.paid && s.paidDate === today))
-    .reduce((sum,s) => sum + s.total, 0);
+    .reduce((sum,s) => sum + (Number(s.total) || 0), 0);
+
+  // IMPORTANT: today's reset/adjustment is persisted in localStorage.
+  // Without this subtraction, loadAll()/refresh would restore the old total.
+  const removed = Number(localStorage.getItem('todayMoneyAdjustment_' + today) || 0);
+  const visibleTotal = Math.max(0, total - removed);
+
   const el = document.getElementById('todayTotal');
-  el.textContent = formatSum(total);
-  el.classList.remove('pulse');
-  void el.offsetWidth;
-  el.classList.add('pulse');
-  document.getElementById('todayDate').textContent = formatDateReadable(today);
+  if(el){
+    el.textContent = formatSum(visibleTotal);
+    el.classList.remove('pulse');
+    void el.offsetWidth;
+    el.classList.add('pulse');
+  }
+
+  const dateEl = document.getElementById('todayDate');
+  if(dateEl) dateEl.textContent = formatDateReadable(today);
 
   const debtCount = sales.filter(s => s.isDebt && !s.paid).length;
   const debtBtn = document.getElementById('debtorsBtn');
   if(debtBtn) debtBtn.textContent = debtCount > 0 ? `Qarzdorlar (${debtCount})` : 'Qarzdorlar';
+
+  // Keep the detailed today's summary in sync too.
+  if(typeof renderTodaySummary === 'function') renderTodaySummary();
 }
 
 /* ============ CART LOGIC ============ */
@@ -1508,16 +1521,15 @@ function saveTodayAdjustment(){
     return;
   }
 
-  const currentNet = Math.max(0, total - (Number(todayMoneyAdjustment) || 0));
-  if(amount > currentNet){
-    amount = currentNet;
-  }
+  const key = 'todayMoneyAdjustment_' + todayStr();
+  const removed = Number(localStorage.getItem(key) || 0);
+  const currentNet = Math.max(0, total - removed);
 
-  todayMoneyAdjustment = Math.min(
-    total,
-    Math.round(((Number(todayMoneyAdjustment) || 0) + amount) * 100) / 100
-  );
-  localStorage.setItem('todayMoneyAdjustment_' + todayStr(), String(todayMoneyAdjustment));
+  if(amount > currentNet) amount = currentNet;
+
+  const newRemoved = Math.min(total, removed + amount);
+  localStorage.setItem(key, String(newRemoved));
+
   closeTodayAdjustModal();
   renderTodaySummary();
 }
@@ -1528,9 +1540,20 @@ function resetTodayMoney(){
   const total = getTodayGrossTotal();
 
   if(confirm("Bugungi topilgan pulni 0 qilishni xohlaysizmi?")){
+    localStorage.setItem(key, String(total));
     todayMoneyAdjustment = total;
-    localStorage.setItem(key, String(todayMoneyAdjustment));
-    renderTodaySummary();
+
+    // Immediately show 0.
+    const header = document.getElementById('todayTotal');
+    if(header) header.textContent = "0";
+
+    const summary = document.getElementById('todaySummaryTotal');
+    if(summary) summary.textContent = "0 so'm";
+
+    const net = document.getElementById('todayNet');
+    if(net) net.textContent = "0 so'm";
+
+    renderTodayTotal();
   }
 }
 
@@ -1735,13 +1758,14 @@ let historyTab = 'days';
 function renderTodaySummary(){
   const today = todayStr();
   const key = 'todayMoneyAdjustment_' + today;
-  todayMoneyAdjustment = Number(localStorage.getItem(key) || 0);
+  const removed = Number(localStorage.getItem(key) || 0);
 
   let cash = 0, card = 0, total = 0;
 
   sales.forEach(s => {
     if(s.manual) return;
     if(s.isDebt && !s.paid) return;
+
     const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
     if(date !== today) return;
 
@@ -1752,24 +1776,22 @@ function renderTodaySummary(){
     else cash += amount;
   });
 
-  todayMoneyAdjustment = Math.min(
-    Math.max(0, todayMoneyAdjustment),
-    total
-  );
+  // Net total is gross sales minus everything reset/removed today.
+  const net = Math.max(0, total - removed);
 
-  const net = Math.max(0, total - todayMoneyAdjustment);
-
+  // Cash/card are shown as today's actual payment totals. The main "today
+  // earned" amount uses the reset/adjustment baseline.
   const cashEl = document.getElementById('todayCash');
   const cardEl = document.getElementById('todayCard');
   const summaryTotalEl = document.getElementById('todaySummaryTotal');
-  const headerTotalEl = document.querySelector('header .ledger #todayTotal');
   const netEl = document.getElementById('todayNet');
+  const headerTotal = document.querySelector('#todayTotal');
 
   if(cashEl) cashEl.textContent = formatSum(cash) + " so'm";
   if(cardEl) cardEl.textContent = formatSum(card) + " so'm";
   if(summaryTotalEl) summaryTotalEl.textContent = formatSum(net) + " so'm";
-  if(headerTotalEl) headerTotalEl.textContent = formatSum(net);
   if(netEl) netEl.textContent = formatSum(net) + " so'm";
+  if(headerTotal) headerTotal.textContent = formatSum(net);
 }
 
 function renderHistory(){
