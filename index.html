@@ -897,6 +897,80 @@
             color: #fff;
         }
 
+        /* ---------- HISTORY MANAGEMENT ---------- */
+        .history-tools {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            margin: -4px 0 14px;
+        }
+        .history-tool-btn {
+            flex: 1;
+            min-width: 140px;
+            border: 1px solid var(--line);
+            background: var(--paper-2);
+            color: var(--ink-text);
+            padding: 9px 11px;
+            border-radius: 9px;
+            font-size: 11.5px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .history-tool-btn.danger {
+            border-color: rgba(162,62,52,.45);
+            color: var(--minus);
+        }
+        .history-tool-btn:hover {
+            border-color: var(--brass);
+            color: var(--brass);
+        }
+        .history-tool-btn.danger:hover {
+            background: var(--minus);
+            border-color: var(--minus);
+            color: #fff;
+        }
+        .history-select-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .history-select {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--brass);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .receipt-delete {
+            margin-top: 8px;
+            border: 1px solid rgba(162,62,52,.35);
+            background: rgba(162,62,52,.07);
+            color: var(--minus);
+            border-radius: 8px;
+            padding: 6px 9px;
+            font-size: 10.5px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .receipt-delete:hover {
+            background: var(--minus);
+            color: #fff;
+        }
+        .receipt.adjustment {
+            border: 1px dashed var(--brass);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: rgba(185,133,46,.08);
+        }
+        @media(max-width:700px) {
+            .history-tools { margin-bottom: 10px; }
+            .history-tool-btn { min-width: 0; font-size: 10.5px; padding: 9px 7px; }
+        }
+
         /* history */
         .tabs {
             display: flex;
@@ -1838,6 +1912,10 @@
                 <span class="top-stat-label">📦 Jami tovar</span>
                 <b id="topProductCount">0 ta</b>
             </div>
+            <div class="top-stat">
+                <span class="top-stat-label">🏦 Umumiy balans</span>
+                <b><span id="topBalance">0</span> so'm</b>
+            </div>
             <div class="top-stat top-stat-total">
                 <span class="top-stat-label">💰 Tovarlarning umumiy qiymati</span>
                 <b><span id="topInventoryValue">0</span> so'm</b>
@@ -2041,6 +2119,14 @@
                 <button class="active" id="tabDays" data-tab="days">Kunlar</button>
                 <button id="tabSold" data-tab="sold">Sotilgan mahsulotlar</button>
             </div>
+            <div class="history-tools">
+                <button class="history-tool-btn" id="deleteSelectedHistoryBtn" type="button">🗑 Tanlanganlarni o'chirish</button>
+                <button class="history-tool-btn danger" id="clearHistoryBtn" type="button">⚠ Tarixni tozalash</button>
+            </div>
+            <div class="history-select-row">
+                <input class="history-select" id="selectAllHistory" type="checkbox">
+                <label for="selectAllHistory">Ko'rsatilgan tarixdagilarni tanlash</label>
+            </div>
             <div id="historyList"></div>
         </div>
     </div>
@@ -2195,8 +2281,34 @@
                 return normalizeSale(data, []);
             }
 
+            async function deleteSale(id) {
+                const { error: itemError } = await supabaseClient.from('sale_items').delete().eq('sale_id', id);
+                if (itemError) throw itemError;
+                const { error } = await supabaseClient.from('sales').delete().eq('id', id);
+                if (error) throw error;
+                return true;
+            }
+
+            async function deleteAllSales() {
+                const { data: rows, error: readError } = await supabaseClient.from('sales').select('id');
+                if (readError) throw readError;
+                const ids = (rows || []).map(x => x.id).filter(x => x != null);
+                if (!ids.length) return true;
+                const { error: itemError } = await supabaseClient.from('sale_items').delete().in('sale_id', ids);
+                if (itemError) throw itemError;
+                const { error } = await supabaseClient.from('sales').delete().in('id', ids);
+                if (error) throw error;
+                return true;
+            }
+
+            async function getBalance() {
+                const { data, error } = await supabaseClient.from('store_balance').select('balance').eq('id', 1).single();
+                if (error) throw error;
+                return Number(data?.balance || 0);
+            }
+
             return {
-                getProducts, addProduct, updateProduct, deleteProduct, getSales, addSale, updateSale,
+                getProducts, addProduct, updateProduct, deleteProduct, getSales, addSale, updateSale, deleteSale, deleteAllSales, getBalance,
                 getCart: async () => readCart(),
                 saveCart: async cart => { writeCart(cart); return cart; }
             };
@@ -2207,9 +2319,12 @@
         let sales = [];
         let cart = {};
         let cartAdjustment = 0;
-        let todayMoneyAdjustment = Number(localStorage.getItem('todayMoneyAdjustment_' + todayStr()) || 0);
         let editingProductId = null;
         let searchTerm = '';
+        // Eski telefon-local reset qiymatlari endi ishlatilmaydi.
+        localStorage.removeItem('todayMoneyAdjustment_' + todayStr());
+        localStorage.removeItem('todayCashAdjustment_' + todayStr());
+        localStorage.removeItem('todayCardAdjustment_' + todayStr());
 
         /* ============ HELPERS ============ */
         function formatSum(n) {
@@ -2297,9 +2412,10 @@
         }
 
         /* ============ TOP SUMMARY ============ */
-        function renderTopStats() {
+        async function renderTopStats() {
             const productCountEl = document.getElementById('topProductCount');
             const inventoryValueEl = document.getElementById('topInventoryValue');
+            const balanceEl = document.getElementById('topBalance');
 
             // Jami tovar = nechta alohida ID (mahsulot turi/card) mavjudligi.
             // Qoldiqdagi dona soni yoki kg miqdori bu hisobga ta'sir qilmaydi.
@@ -2317,6 +2433,19 @@
                 productCountEl.textContent = `${productCardCount} ta`;
             }
             if (inventoryValueEl) inventoryValueEl.textContent = formatSum(inventoryValue);
+
+            // Umumiy balans endi Supabase'dagi store_balance jadvalidan API orqali keladi.
+            // Bu qiymat sales jadvaliga trigger orqali avtomatik yangilanib boradi,
+            // shu sabab har bir telefon/qurilmada bir xil, ishonchli raqam ko'rinadi.
+            if (balanceEl) {
+                try {
+                    const balance = await mockApi.getBalance();
+                    balanceEl.textContent = formatSum(balance);
+                } catch (err) {
+                    console.warn('Balansni olishda xatolik:', err);
+                    balanceEl.textContent = '—';
+                }
+            }
         }
 
         /* ============ RENDER: CART BAR ============ */
@@ -2388,10 +2517,10 @@
                 .filter(s => (!s.isDebt && s.date === today) || (s.isDebt && s.paid && s.paidDate === today))
                 .reduce((sum, s) => sum + (Number(s.total) || 0), 0);
 
-            // IMPORTANT: today's reset/adjustment is persisted in localStorage.
-            // Without this subtraction, loadAll()/refresh would restore the old total.
-            const removed = Number(localStorage.getItem('todayMoneyAdjustment_' + today) || 0);
-            const visibleTotal = Math.max(0, total - removed);
+            // Bugungi hisob endi to'liq Supabase'dan keladi.
+            // Reset/ayirish ham DB ga manfiy manual yozuv sifatida saqlanadi,
+            // shuning uchun barcha telefonlarda bir xil summa chiqadi.
+            const visibleTotal = Math.max(0, total);
 
             const el = document.getElementById('todayTotal');
             if (el) {
@@ -2537,7 +2666,7 @@
             document.getElementById('todayAdjustAmount').value = '';
             document.getElementById('todayAdjustNote').value = '';
             document.getElementById('todayAdjustCurrent').textContent = formatSum(
-                Math.max(0, total - todayMoneyAdjustment)
+                Math.max(0, total)
             );
             document.getElementById('todayAdjustOverlay').classList.add('show');
         }
@@ -2546,7 +2675,7 @@
             document.getElementById('todayAdjustOverlay').classList.remove('show');
         }
 
-        function saveTodayAdjustment() {
+        async function saveTodayAdjustment() {
             const total = getTodayGrossTotal();
             let amount = Number(document.getElementById('todayAdjustAmount').value);
 
@@ -2555,50 +2684,66 @@
                 return;
             }
 
+            amount = Math.min(amount, Math.max(0, total));
+            if (amount <= 0) {
+                closeTodayAdjustModal();
+                return;
+            }
+
             const today = todayStr();
-            const key = 'todayMoneyAdjustment_' + today;
-            const removed = Number(localStorage.getItem(key) || 0);
-            const currentNet = Math.max(0, total - removed);
-            amount = Math.min(amount, currentNet);
+            const now = new Date();
+            const noteInput = document.getElementById('todayAdjustNote');
+            const note = (noteInput?.value || '').trim();
 
-            // Ayirilgan pulni bugungi umumiy reset bazasiga qo'shamiz.
-            const newRemoved = Math.min(total, removed + amount);
-            localStorage.setItem(key, String(newRemoved));
-            todayMoneyAdjustment = newRemoved;
-
-            closeTodayAdjustModal();
-            renderTodaySummary();
-            renderTodayTotal();
-            renderCartBar();
+            try {
+                await mockApi.addSale({
+                    date: today,
+                    time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+                    items: [],
+                    total: -Math.round(amount),
+                    paymentMethod: 'cash',
+                    isDebt: false,
+                    paid: true,
+                    manual: true,
+                    note: 'AYIRISH' + (note ? ' · ' + note : '')
+                });
+                closeTodayAdjustModal();
+                await loadAll();
+                if (document.getElementById('historyOverlay')?.classList.contains('show')) renderHistory();
+            } catch (err) {
+                console.error('Pul ayirish xatosi:', err);
+                alert("Pul ayirib bo'lmadi: " + (err?.message || err));
+            }
         }
 
-        function resetTodayMoney() {
+        async function resetTodayMoney() {
+            const total = Math.max(0, getTodayGrossTotal());
+            if (total <= 0) {
+                alert("Bugun hisob 0 so'm.");
+                return;
+            }
+            if (!confirm("Bugungi hisobni 0 qilishni xohlaysizmi?")) return;
+
             const today = todayStr();
-            const key = 'todayMoneyAdjustment_' + today;
-            const total = getTodayGrossTotal();
-
-            if (!confirm("Bugungi topilgan pulni 0 qilishni xohlaysizmi?")) return;
-
-            // Bugungi barcha tushumni 0 ko'rsatish uchun bazani saqlaymiz.
-            localStorage.setItem(key, String(total));
-            todayMoneyAdjustment = total;
-
-            // Eski cash/card reset bazalarini ham aynan shu resetga moslaymiz.
-            let cash = 0, card = 0;
-            sales.forEach(s => {
-                if (s.isDebt && !s.paid) return;
-                const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
-                if (date !== today) return;
-                const amount = Number(s.total) || 0;
-                if ((s.paymentMethod || 'cash') === 'card') card += amount;
-                else cash += amount;
-            });
-            localStorage.setItem('todayCashAdjustment_' + today, String(cash));
-            localStorage.setItem('todayCardAdjustment_' + today, String(card));
-
-            renderTodaySummary();
-            renderTodayTotal();
-            renderCartBar();
+            const now = new Date();
+            try {
+                await mockApi.addSale({
+                    date: today,
+                    time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+                    items: [],
+                    total: -Math.round(total),
+                    paymentMethod: 'cash',
+                    isDebt: false,
+                    paid: true,
+                    manual: true,
+                    note: 'RESET'
+                });
+                await loadAll();
+                if (document.getElementById('historyOverlay')?.classList.contains('show')) renderHistory();
+            } catch (err) {
+                console.error('Reset xatosi:', err);
+                alert("Reset qilib bo'lmadi: " + (err?.message || err));
+            }
         }
 
         function getCurrentCartGrossTotal() {
@@ -2777,30 +2922,6 @@
         function closeCashModal() {
             document.getElementById('cashOverlay').classList.remove('show');
         }
-        /* ============ TOP SUMMARY ============ */
-        function renderTopStats() {
-            const productCountEl = document.getElementById('topProductCount');
-            const inventoryValueEl = document.getElementById('topInventoryValue');
-
-            // Jami tovar = nechta alohida ID (mahsulot turi/card) mavjudligi.
-            // Qoldiqdagi dona soni yoki kg miqdori bu hisobga ta'sir qilmaydi.
-            const uniqueProductIds = new Set(
-                products.map(p => String(p.id)).filter(Boolean)
-            );
-            const productCardCount = uniqueProductIds.size;
-
-            // Umumiy qiymat = barcha mahsulotlarning narxi × qoldig'i.
-            const inventoryValue = products.reduce((sum, p) => {
-                return sum + ((Number(p.price) || 0) * (Number(p.stock) || 0));
-            }, 0);
-
-            if (productCountEl) {
-                productCountEl.textContent = `${productCardCount} ta`;
-            }
-            if (inventoryValueEl) inventoryValueEl.textContent = formatSum(inventoryValue);
-        }
-
-
 
         /* ============ NAQD PUL QO'SHISH ============ */
         window.saveCash = async function saveCash() {
@@ -2853,36 +2974,25 @@
 
         function renderTodaySummary() {
             const today = todayStr();
-            const key = 'todayMoneyAdjustment_' + today;
-            const removed = Number(localStorage.getItem(key) || 0);
-
             let cash = 0, card = 0, total = 0;
 
             sales.forEach(s => {
-                // Manual cash entries are included in today's cash total,
-                // but they must follow the same reset baseline.
                 if (s.isDebt && !s.paid) return;
-
                 const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
                 if (date !== today) return;
 
                 const amount = Number(s.total) || 0;
                 total += amount;
-
                 if ((s.paymentMethod || 'cash') === 'card') card += amount;
                 else cash += amount;
             });
 
-            const cashRemoved = Number(localStorage.getItem('todayCashAdjustment_' + today) || 0);
-            const cardRemoved = Number(localStorage.getItem('todayCardAdjustment_' + today) || 0);
+            // Manfiy AYIRISH/RESET yozuvlari ham DB'da saqlanadi.
+            // Shu sabab barcha qurilmalar bir xil net hisobni ko'radi.
+            const net = Math.max(0, total);
+            cash = Math.max(0, cash);
+            card = Math.max(0, card);
 
-            // Reset/adjustment baselines persist through page refresh.
-            const net = Math.max(0, total - removed);
-            cash = Math.max(0, cash - cashRemoved);
-            card = Math.max(0, card - cardRemoved);
-
-            // Cash/card are shown as today's actual payment totals. The main "today
-            // earned" amount uses the reset/adjustment baseline.
             const cashEl = document.getElementById('todayCash');
             const cardEl = document.getElementById('todayCard');
             const summaryTotalEl = document.getElementById('todaySummaryTotal');
@@ -2903,58 +3013,72 @@
 
         function renderHistoryDays() {
             const container = document.getElementById('historyList');
-            const today = todayStr();
             const byDate = {};
             sales.forEach(s => {
-                if (s.isDebt && !s.paid) return; // unpaid debts don't count as received cash yet
+                if (s.isDebt && !s.paid) return;
                 const effDate = s.isDebt ? s.paidDate : s.date;
+                if (!effDate) return;
                 if (!byDate[effDate]) byDate[effDate] = [];
                 byDate[effDate].push(s);
             });
-            const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
 
+            const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
             if (dates.length === 0) {
                 container.innerHTML = `<div class="no-data">Hali to'lovlar tarixi yo'q.</div>`;
+                updateHistorySelectAllState();
                 return;
             }
 
             container.innerHTML = dates.map(date => {
                 const daySales = byDate[date].sort((a, b) => (a.isDebt ? a.paidTime : a.time).localeCompare(b.isDebt ? b.paidTime : b.time));
-                const dayTotal = daySales.reduce((s, x) => s + x.total, 0);
-                const dayCash = daySales.filter(x => !x.isDebt && (x.paymentMethod || 'cash') === 'cash').reduce((s, x) => s + Number(x.total || 0), 0);
-                const dayCard = daySales.filter(x => !x.isDebt && x.paymentMethod === 'card').reduce((s, x) => s + Number(x.total || 0), 0);
+                const dayTotal = Math.max(0, daySales.reduce((sum, x) => sum + (Number(x.total) || 0), 0));
+                const dayCash = daySales.filter(x => !x.isDebt && (x.paymentMethod || 'cash') === 'cash').reduce((sum, x) => sum + Number(x.total || 0), 0);
+                const dayCard = daySales.filter(x => !x.isDebt && x.paymentMethod === 'card').reduce((sum, x) => sum + Number(x.total || 0), 0);
+
                 const receipts = daySales.map(sale => {
+                    const isAdjustment = sale.manual && Number(sale.total) < 0;
+                    if (isAdjustment) {
+                        return `
+        <div class="receipt adjustment">
+          <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
+          <span class="rtag">${sale.note === 'RESET' ? 'RESET' : 'Pul ayirildi'}</span>
+          <div class="rtime">${sale.time}${sale.note && sale.note !== 'RESET' && sale.note !== 'AYIRISH' ? ' · ' + escapeHtml(sale.note) : ''}</div>
+          <div class="rtotal"><span>Hisobdan ayirildi</span><span>${formatSum(Math.abs(sale.total))} so'm</span></div>
+          <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
+        </div>`;
+                    }
                     if (sale.manual) {
                         return `
         <div class="receipt manual">
+          <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
           <span class="rtag">Naqd pul</span>
           <div class="rtime">${sale.time}${sale.note ? ' · ' + escapeHtml(sale.note) : ''}</div>
           <div class="rtotal"><span>Qo'shildi</span><span>${formatSum(sale.total)} so'm</span></div>
+          <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
         </div>`;
                     }
                     if (sale.isDebt) {
                         return `
         <div class="receipt manual">
+          <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
           <span class="rtag">Qarz to'landi</span>
           <div class="rtime">${sale.paidTime} · ${escapeHtml(sale.customerName || 'Mijoz')}</div>
           ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
-          <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm${sale.paymentMethod === "card" ? " · 💳 Karta" : (sale.isDebt ? " · 🟠 Qarz" : " · 💵 Naqd")}</span></div>
+          <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm${sale.paymentMethod === "card" ? " · 💳 Karta" : " · 🟠 Qarz"}</span></div>
+          <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
         </div>`;
                     }
                     return `
       <div class="receipt">
+        <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
         <div class="rtime">${sale.time}</div>
         ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
-        <div class="rtotal">
-          <span>Jami</span>
-          <span>${formatSum(sale.total)} so'm</span>
-        </div>
-        <div class="payment-history-summary">
-          <span class="payment-history-badge ${paymentClass(sale)}">${paymentLabel(sale)}</span>
-        </div>
-      </div>
-    `;
+        <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm</span></div>
+        <div class="payment-history-summary"><span class="payment-history-badge ${paymentClass(sale)}">${paymentLabel(sale)}</span></div>
+        <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
+      </div>`;
                 }).join('');
+
                 return `
       <div class="day-row">
         <div class="day-head" data-day="${date}">
@@ -2962,14 +3086,55 @@
           <span class="t">${formatSum(dayTotal)} so'm</span>
         </div>
         <div class="history-payment-summary">
-          <span class="payment-history-badge payment-cash">💵 Naqd: ${formatSum(dayCash)} so'm</span>
-          <span class="payment-history-badge payment-card">💳 Karta: ${formatSum(dayCard)} so'm</span>
+          <span class="payment-history-badge payment-cash">💵 Naqd: ${formatSum(Math.max(0, dayCash))} so'm</span>
+          <span class="payment-history-badge payment-card">💳 Karta: ${formatSum(Math.max(0, dayCard))} so'm</span>
           <span class="payment-history-badge">Jami: ${formatSum(dayTotal)} so'm</span>
         </div>
         <div class="day-body" id="daybody-${date}">${receipts}</div>
-      </div>
-    `;
+      </div>`;
             }).join('');
+            updateHistorySelectAllState();
+        }
+
+        function updateHistorySelectAllState() {
+            const boxes = [...document.querySelectorAll('#historyList [data-history-select]')];
+            const all = document.getElementById('selectAllHistory');
+            if (!all) return;
+            all.checked = boxes.length > 0 && boxes.every(x => x.checked);
+            all.indeterminate = boxes.some(x => x.checked) && !all.checked;
+        }
+
+        async function deleteSelectedHistory() {
+            const ids = [...document.querySelectorAll('#historyList [data-history-select]:checked')].map(x => x.dataset.historySelect);
+            if (!ids.length) {
+                alert("Avval tarixdan o'chiriladigan yozuvlarni tanlang.");
+                return;
+            }
+            if (!confirm(`${ids.length} ta tarix yozuvini o'chirmoqchimisiz?`)) return;
+            try {
+                for (const id of ids) await mockApi.deleteSale(id);
+                await loadAll();
+                renderHistory();
+            } catch (err) {
+                console.error("Tarixni o'chirish xatosi:", err);
+                alert("Tarixni o'chirib bo'lmadi: " + (err?.message || err));
+            }
+        }
+
+        async function clearHistory() {
+            if (!sales.length) {
+                alert("Tarix allaqachon bo'sh.");
+                return;
+            }
+            if (!confirm("Butun hisob tarixini barcha telefonlarda o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.")) return;
+            try {
+                await mockApi.deleteAllSales();
+                await loadAll();
+                renderHistory();
+            } catch (err) {
+                console.error('Tarixni tozalash xatosi:', err);
+                alert("Tarixni tozalab bo'lmadi: " + (err?.message || err));
+            }
         }
 
         function renderHistorySold() {
@@ -3205,7 +3370,33 @@
             renderHistory();
         });
 
-        document.getElementById('historyList').addEventListener('click', e => {
+        document.getElementById('deleteSelectedHistoryBtn').addEventListener('click', deleteSelectedHistory);
+        document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+        document.getElementById('selectAllHistory').addEventListener('change', e => {
+            document.querySelectorAll('#historyList [data-history-select]').forEach(box => box.checked = e.target.checked);
+            updateHistorySelectAllState();
+        });
+
+        document.getElementById('historyList').addEventListener('change', e => {
+            if (e.target.matches('[data-history-select]')) updateHistorySelectAllState();
+        });
+
+        document.getElementById('historyList').addEventListener('click', async e => {
+            const deleteBtn = e.target.closest('[data-delete-history]');
+            if (deleteBtn) {
+                e.stopPropagation();
+                const id = deleteBtn.dataset.deleteHistory;
+                if (!confirm("Shu tarix yozuvini o'chirmoqchimisiz?")) return;
+                try {
+                    await mockApi.deleteSale(id);
+                    await loadAll();
+                    renderHistory();
+                } catch (err) {
+                    console.error("Tarix yozuvini o'chirish xatosi:", err);
+                    alert("O'chirib bo'lmadi: " + (err?.message || err));
+                }
+                return;
+            }
             const head = e.target.closest('.day-head');
             if (!head) return;
             const date = head.dataset.day;
@@ -3283,6 +3474,7 @@
 
         /* ============ DAILY REFRESH ============ */
         setInterval(renderTodayTotal, 60000);
+        setInterval(renderTopStats, 60000);
 
         /* ============ INIT ============ */
         loadAll().catch(err => {
