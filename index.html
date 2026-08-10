@@ -1912,10 +1912,6 @@
                 <span class="top-stat-label">📦 Jami tovar</span>
                 <b id="topProductCount">0 ta</b>
             </div>
-            <div class="top-stat">
-                <span class="top-stat-label">🏦 Umumiy balans</span>
-                <b><span id="topBalance">0</span> so'm</b>
-            </div>
             <div class="top-stat top-stat-total">
                 <span class="top-stat-label">💰 Tovarlarning umumiy qiymati</span>
                 <b><span id="topInventoryValue">0</span> so'm</b>
@@ -2301,14 +2297,8 @@
                     return true;
                 }
 
-                async function getBalance() {
-                    const { data, error } = await supabaseClient.from('balance').select('amount').eq('id', 1).single();
-                    if (error) throw error;
-                    return Number(data?.amount || 0);
-                }
-
                 return {
-                    getProducts, addProduct, updateProduct, deleteProduct, getSales, addSale, updateSale, deleteSale, deleteAllSales, getBalance,
+                    getProducts, addProduct, updateProduct, deleteProduct, getSales, addSale, updateSale, deleteSale, deleteAllSales,
                     getCart: async () => readCart(),
                     saveCart: async cart => { writeCart(cart); return cart; }
                 };
@@ -2415,8 +2405,6 @@
             async function renderTopStats() {
                 const productCountEl = document.getElementById('topProductCount');
                 const inventoryValueEl = document.getElementById('topInventoryValue');
-                const balanceEl = document.getElementById('topBalance');
-
                 // Jami tovar = nechta alohida ID (mahsulot turi/card) mavjudligi.
                 // Qoldiqdagi dona soni yoki kg miqdori bu hisobga ta'sir qilmaydi.
                 const uniqueProductIds = new Set(
@@ -2434,18 +2422,6 @@
                 }
                 if (inventoryValueEl) inventoryValueEl.textContent = formatSum(inventoryValue);
 
-                // Umumiy balans endi Supabase'dagi balance jadvalidan API orqali keladi.
-                // Bu qiymat sales jadvaliga trigger orqali avtomatik yangilanib boradi,
-                // shu sabab har bir telefon/qurilmada bir xil, ishonchli raqam ko'rinadi.
-                if (balanceEl) {
-                    try {
-                        const balance = await mockApi.getBalance();
-                        balanceEl.textContent = formatSum(balance);
-                    } catch (err) {
-                        console.warn('Balansni olishda xatolik:', err);
-                        balanceEl.textContent = '—';
-                    }
-                }
             }
 
             /* ============ RENDER: CART BAR ============ */
