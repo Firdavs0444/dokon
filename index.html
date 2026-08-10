@@ -2132,332 +2132,375 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        /* ============ SUPABASE API LAYER ============ */
-        const SUPABASE_URL = 'https://xtndqovjotrnwzkfasin.supabase.co';
-        const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_E1AcedP81UUPUPwZ2DO6zw_KjK1lzbT';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+        <script>
+            /* ============ SUPABASE API LAYER ============ */
+            const SUPABASE_URL = 'https://xtndqovjotrnwzkfasin.supabase.co';
+            const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_E1AcedP81UUPUPwZ2DO6zw_KjK1lzbT';
+            const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-        const mockApi = (() => {
-            const CART_KEY = 'ds_cart';
+            const mockApi = (() => {
+                const CART_KEY = 'ds_cart';
 
-            function readCart() {
-                try {
-                    const raw = localStorage.getItem(CART_KEY);
-                    return raw ? JSON.parse(raw) : {};
-                } catch (e) { return {}; }
-            }
-            function writeCart(cart) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+                function readCart() {
+                    try {
+                        const raw = localStorage.getItem(CART_KEY);
+                        return raw ? JSON.parse(raw) : {};
+                    } catch (e) { return {}; }
+                }
+                function writeCart(cart) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
 
-            function normalizeProduct(p) {
-                return {
-                    id: String(p.id),
-                    name: p.name,
-                    unit: p.unit,
-                    price: Number(p.price || 0),
-                    stock: Number(p.stock || 0),
-                    createdAt: p.created_at
-                };
-            }
+                function normalizeProduct(p) {
+                    return {
+                        id: String(p.id),
+                        name: p.name,
+                        unit: p.unit,
+                        price: Number(p.price || 0),
+                        stock: Number(p.stock || 0),
+                        createdAt: p.created_at
+                    };
+                }
 
-            function normalizeSale(sale, items) {
-                const created = sale.created_at ? new Date(sale.created_at) : new Date();
-                const date = sale.date || (
-                    created.getFullYear() + '-' +
-                    String(created.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(created.getDate()).padStart(2, '0')
-                );
-                const time = sale.time || (
-                    String(created.getHours()).padStart(2, '0') + ':' +
-                    String(created.getMinutes()).padStart(2, '0')
-                );
-                return {
-                    id: String(sale.id),
-                    date, time,
-                    items: items || [],
-                    total: Number(sale.total || 0),
-                    paymentMethod: sale.payment_type || 'cash',
-                    isDebt: !!sale.is_debt,
-                    paid: sale.paid !== false,
-                    customerName: sale.customer_name || '',
-                    note: sale.note || '',
-                    manual: !!sale.manual,
-                    paidDate: sale.paid_date || '',
-                    paidTime: sale.paid_time || ''
-                };
-            }
+                function normalizeSale(sale, items) {
+                    const created = sale.created_at ? new Date(sale.created_at) : new Date();
+                    const date = sale.date || (
+                        created.getFullYear() + '-' +
+                        String(created.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(created.getDate()).padStart(2, '0')
+                    );
+                    const time = sale.time || (
+                        String(created.getHours()).padStart(2, '0') + ':' +
+                        String(created.getMinutes()).padStart(2, '0')
+                    );
+                    return {
+                        id: String(sale.id),
+                        date, time,
+                        items: items || [],
+                        total: Number(sale.total || 0),
+                        paymentMethod: sale.payment_type || 'cash',
+                        isDebt: !!sale.is_debt,
+                        paid: sale.paid !== false,
+                        customerName: sale.customer_name || '',
+                        note: sale.note || '',
+                        manual: !!sale.manual,
+                        paidDate: sale.paid_date || '',
+                        paidTime: sale.paid_time || ''
+                    };
+                }
 
-            async function getProducts() {
-                const { data, error } = await supabaseClient.from('products').select('*').order('id', { ascending: true });
-                if (error) throw error;
-                return (data || []).map(normalizeProduct);
-            }
+                async function getProducts() {
+                    const { data, error } = await supabaseClient.from('products').select('*').order('id', { ascending: true });
+                    if (error) throw error;
+                    return (data || []).map(normalizeProduct);
+                }
 
-            async function addProduct(product) {
-                const { data, error } = await supabaseClient.from('products').insert({
-                    name: product.name, price: Number(product.price), unit: product.unit, stock: Number(product.stock)
-                }).select().single();
-                if (error) throw error;
-                return normalizeProduct(data);
-            }
+                async function addProduct(product) {
+                    const { data, error } = await supabaseClient.from('products').insert({
+                        name: product.name, price: Number(product.price), unit: product.unit, stock: Number(product.stock)
+                    }).select().single();
+                    if (error) throw error;
+                    return normalizeProduct(data);
+                }
 
-            async function updateProduct(id, patch) {
-                const dbPatch = {};
-                if (patch.name !== undefined) dbPatch.name = patch.name;
-                if (patch.price !== undefined) dbPatch.price = Number(patch.price);
-                if (patch.unit !== undefined) dbPatch.unit = patch.unit;
-                if (patch.stock !== undefined) dbPatch.stock = Number(patch.stock);
-                const { data, error } = await supabaseClient.from('products').update(dbPatch).eq('id', id).select().single();
-                if (error) throw error;
-                return normalizeProduct(data);
-            }
+                async function updateProduct(id, patch) {
+                    const dbPatch = {};
+                    if (patch.name !== undefined) dbPatch.name = patch.name;
+                    if (patch.price !== undefined) dbPatch.price = Number(patch.price);
+                    if (patch.unit !== undefined) dbPatch.unit = patch.unit;
+                    if (patch.stock !== undefined) dbPatch.stock = Number(patch.stock);
+                    const { data, error } = await supabaseClient.from('products').update(dbPatch).eq('id', id).select().single();
+                    if (error) throw error;
+                    return normalizeProduct(data);
+                }
 
-            async function deleteProduct(id) {
-                const { error } = await supabaseClient.from('products').delete().eq('id', id);
-                if (error) throw error;
-                const cart = readCart(); delete cart[String(id)]; writeCart(cart);
-                return true;
-            }
+                async function deleteProduct(id) {
+                    const { error } = await supabaseClient.from('products').delete().eq('id', id);
+                    if (error) throw error;
+                    const cart = readCart(); delete cart[String(id)]; writeCart(cart);
+                    return true;
+                }
 
-            async function getSales() {
-                const { data: saleRows, error: saleError } = await supabaseClient.from('sales').select('*').order('id', { ascending: false });
-                if (saleError) throw saleError;
-                const { data: itemRows, error: itemError } = await supabaseClient.from('sale_items').select('*').order('id', { ascending: true });
-                if (itemError) throw itemError;
-
-                const grouped = {};
-                (itemRows || []).forEach(it => {
-                    const key = String(it.sale_id);
-                    if (!grouped[key]) grouped[key] = [];
-                    grouped[key].push({
-                        productId: it.product_id == null ? '' : String(it.product_id),
-                        name: it.product_name,
-                        unit: it.unit,
-                        price: Number(it.quantity) ? Number(it.subtotal) / Number(it.quantity) : 0,
-                        qty: Number(it.quantity || 0),
-                        subtotal: Number(it.subtotal || 0)
-                    });
-                });
-                return (saleRows || []).map(s => normalizeSale(s, grouped[String(s.id)] || []));
-            }
-
-            async function addSale(sale) {
-                const { data, error } = await supabaseClient.from('sales').insert({
-                    total: Number(sale.total || 0),
-                    payment_type: sale.paymentMethod || 'cash',
-                    date: sale.date || null,
-                    time: sale.time || null,
-                    is_debt: !!sale.isDebt,
-                    paid: sale.paid !== false,
-                    customer_name: sale.customerName || '',
-                    note: sale.note || '',
-                    manual: !!sale.manual
-                }).select().single();
-                if (error) throw error;
-
-                if (sale.items && sale.items.length) {
-                    const rows = sale.items.map(it => ({
-                        sale_id: data.id,
-                        product_id: it.productId ? Number(it.productId) : null,
-                        product_name: it.name,
-                        unit: it.unit,
-                        quantity: Number(it.qty),
-                        subtotal: Number(it.subtotal)
-                    }));
-                    const { error: itemError } = await supabaseClient.from('sale_items').insert(rows);
+                async function getSales() {
+                    const { data: saleRows, error: saleError } = await supabaseClient.from('sales').select('*').order('id', { ascending: false });
+                    if (saleError) throw saleError;
+                    const { data: itemRows, error: itemError } = await supabaseClient.from('sale_items').select('*').order('id', { ascending: true });
                     if (itemError) throw itemError;
+
+                    const grouped = {};
+                    (itemRows || []).forEach(it => {
+                        const key = String(it.sale_id);
+                        if (!grouped[key]) grouped[key] = [];
+                        grouped[key].push({
+                            productId: it.product_id == null ? '' : String(it.product_id),
+                            name: it.product_name,
+                            unit: it.unit,
+                            price: Number(it.quantity) ? Number(it.subtotal) / Number(it.quantity) : 0,
+                            qty: Number(it.quantity || 0),
+                            subtotal: Number(it.subtotal || 0)
+                        });
+                    });
+                    return (saleRows || []).map(s => normalizeSale(s, grouped[String(s.id)] || []));
                 }
-                return normalizeSale(data, sale.items || []);
-            }
 
-            async function updateSale(id, patch) {
-                const dbPatch = {};
-                if (patch.paid !== undefined) dbPatch.paid = !!patch.paid;
-                if (patch.paidDate !== undefined) dbPatch.paid_date = patch.paidDate || null;
-                if (patch.paidTime !== undefined) dbPatch.paid_time = patch.paidTime || null;
-                if (patch.paymentMethod !== undefined) dbPatch.payment_type = patch.paymentMethod;
-                const { data, error } = await supabaseClient.from('sales').update(dbPatch).eq('id', id).select().single();
-                if (error) throw error;
-                return normalizeSale(data, []);
-            }
+                async function addSale(sale) {
+                    const { data, error } = await supabaseClient.from('sales').insert({
+                        total: Number(sale.total || 0),
+                        payment_type: sale.paymentMethod || 'cash',
+                        date: sale.date || null,
+                        time: sale.time || null,
+                        is_debt: !!sale.isDebt,
+                        paid: sale.paid !== false,
+                        customer_name: sale.customerName || '',
+                        note: sale.note || '',
+                        manual: !!sale.manual
+                    }).select().single();
+                    if (error) throw error;
 
-            async function deleteSale(id) {
-                const { error: itemError } = await supabaseClient.from('sale_items').delete().eq('sale_id', id);
-                if (itemError) throw itemError;
-                const { error } = await supabaseClient.from('sales').delete().eq('id', id);
-                if (error) throw error;
-                return true;
-            }
-
-            async function deleteAllSales() {
-                const { data: rows, error: readError } = await supabaseClient.from('sales').select('id');
-                if (readError) throw readError;
-                const ids = (rows || []).map(x => x.id).filter(x => x != null);
-                if (!ids.length) return true;
-                const { error: itemError } = await supabaseClient.from('sale_items').delete().in('sale_id', ids);
-                if (itemError) throw itemError;
-                const { error } = await supabaseClient.from('sales').delete().in('id', ids);
-                if (error) throw error;
-                return true;
-            }
-
-            async function getBalance() {
-                const { data, error } = await supabaseClient.from('store_balance').select('balance').eq('id', 1).single();
-                if (error) throw error;
-                return Number(data?.balance || 0);
-            }
-
-            return {
-                getProducts, addProduct, updateProduct, deleteProduct, getSales, addSale, updateSale, deleteSale, deleteAllSales, getBalance,
-                getCart: async () => readCart(),
-                saveCart: async cart => { writeCart(cart); return cart; }
-            };
-        })();
-
-        /* ============ APP STATE ============ */
-        let products = [];
-        let sales = [];
-        let cart = {};
-        let cartAdjustment = 0;
-        let editingProductId = null;
-        let searchTerm = '';
-        // Eski telefon-local reset qiymatlari endi ishlatilmaydi.
-        localStorage.removeItem('todayMoneyAdjustment_' + todayStr());
-        localStorage.removeItem('todayCashAdjustment_' + todayStr());
-        localStorage.removeItem('todayCardAdjustment_' + todayStr());
-
-        /* ============ HELPERS ============ */
-        function formatSum(n) {
-            n = Math.round(Number(n) || 0);
-            return n.toLocaleString('ru-RU').replace(/,/g, ' ');
-        }
-        function todayStr() {
-            const d = new Date();
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        }
-        function formatDateReadable(dstr) {
-            const [y, m, d] = dstr.split('-');
-            const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
-            return `${parseInt(d)}-${months[parseInt(m) - 1]} ${y}`;
-        }
-        function step(unit) { return unit === 'kg' ? 0.1 : 1; }
-        function fmtQty(qty, unit) {
-            if (unit === 'kg') {
-                const grams = Math.round(qty * 1000);
-                return grams % 1000 === 0 ? String(grams / 1000) : (grams / 1000).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
-            }
-            return qty.toString();
-        }
-        function fmtGrams(qty) {
-            return String(Math.round(qty * 1000));
-        }
-
-        /* ============ RENDER: PRODUCT GRID ============ */
-        function renderGrid() {
-            const grid = document.getElementById('productGrid');
-            const term = searchTerm.trim().toLowerCase();
-            const filtered = products.filter(p => {
-                const name = String(p.name || '').toLowerCase();
-                const price = String(Number(p.price || 0)).toLowerCase();
-                const formattedPrice = formatSum(Number(p.price || 0)).toLowerCase();
-                return name.includes(term) || price.includes(term) || formattedPrice.includes(term);
-            });
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `<div class="empty-state"><b>Mahsulot topilmadi</b>${products.length === 0 ? "Yuqoridagi tugma orqali birinchi mahsulotni qo'shing" : "Qidiruvga mos mahsulot yo'q"}</div>`;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(p => {
-                const qty = cart[p.id] || 0;
-                const subtotal = qty * p.price;
-                return `
-    <div class="card ${qty > 0 ? 'has-qty' : ''}" data-id="${p.id}">
-      <button class="edit-ico" data-edit="${p.id}" title="Tahrirlash">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-      </button>
-      <button class="product-edit-btn" data-edit="${p.id}" type="button">
-        ✏️ O'zgartirish
-      </button>
-      <button class="product-remove-btn" data-remove-product="${p.id}" type="button" title="Mahsulotni o'chirish">×</button>
-      <div class="card-top">
-        <div class="card-name">${escapeHtml(p.name)}</div>
-      </div>
-      <span class="unit-badge">${p.unit === 'kg' ? 'KG' : 'DONA'}</span>
-      <div class="card-price" style="margin-top:10px;">${formatSum(p.price)} <span>so'm / ${p.unit === 'kg' ? 'kg' : 'dona'}</span></div>
-      <div class="card-stock">Qoldig'i: <b>${fmtQty(p.stock, p.unit)} ${p.unit === 'kg' ? 'kg' : 'dona'}</b></div>
-      <div class="qty-row">
-        ${p.unit === 'kg'
-                        ? `<div class="kg-qty-wrap">
-               <input class="kg-qty-input" data-kgqty="${p.id}" type="number" min="0" max="${p.stock * 1000}" step="1" value="${qty > 0 ? fmtGrams(qty) : ''}" placeholder="gramm" title="Grammini o'zingiz kiriting">
-               <span class="kg-unit">gr</span>
-             </div>`
-                        : `<div class="stepper">
-               <button class="minus" data-minus="${p.id}">−</button>
-               <span class="qty" data-qtyfield="${p.id}" title="Aniq miqdor kiritish">${fmtQty(qty, p.unit)}</span>
-               <button class="plus" data-plus="${p.id}">+</button>
-             </div>`
+                    if (sale.items && sale.items.length) {
+                        const rows = sale.items.map(it => ({
+                            sale_id: data.id,
+                            product_id: it.productId ? Number(it.productId) : null,
+                            product_name: it.name,
+                            unit: it.unit,
+                            quantity: Number(it.qty),
+                            subtotal: Number(it.subtotal)
+                        }));
+                        const { error: itemError } = await supabaseClient.from('sale_items').insert(rows);
+                        if (itemError) throw itemError;
                     }
-        ${qty > 0 ? `<div class="card-price">${formatSum(p.price)} so'm/${p.unit}</div>
-             <div class="card-subtotal">${formatSum(subtotal)} so'm</div>` : ''}
-      </div>
-    </div>`;
-            }).join('');
-        }
+                    return normalizeSale(data, sale.items || []);
+                }
 
-        function escapeHtml(str) {
-            const d = document.createElement('div');
-            d.textContent = str;
-            return d.innerHTML;
-        }
+                async function updateSale(id, patch) {
+                    const dbPatch = {};
+                    if (patch.paid !== undefined) dbPatch.paid = !!patch.paid;
+                    if (patch.paidDate !== undefined) dbPatch.paid_date = patch.paidDate || null;
+                    if (patch.paidTime !== undefined) dbPatch.paid_time = patch.paidTime || null;
+                    if (patch.paymentMethod !== undefined) dbPatch.payment_type = patch.paymentMethod;
+                    const { data, error } = await supabaseClient.from('sales').update(dbPatch).eq('id', id).select().single();
+                    if (error) throw error;
+                    return normalizeSale(data, []);
+                }
 
-        /* ============ TOP SUMMARY ============ */
-        async function renderTopStats() {
-            const productCountEl = document.getElementById('topProductCount');
-            const inventoryValueEl = document.getElementById('topInventoryValue');
-            const balanceEl = document.getElementById('topBalance');
+                async function deleteSale(id) {
+                    const { error: itemError } = await supabaseClient.from('sale_items').delete().eq('sale_id', id);
+                    if (itemError) throw itemError;
+                    const { error } = await supabaseClient.from('sales').delete().eq('id', id);
+                    if (error) throw error;
+                    return true;
+                }
 
-            // Jami tovar = nechta alohida ID (mahsulot turi/card) mavjudligi.
-            // Qoldiqdagi dona soni yoki kg miqdori bu hisobga ta'sir qilmaydi.
-            const uniqueProductIds = new Set(
-                products.map(p => String(p.id)).filter(Boolean)
-            );
-            const productCardCount = uniqueProductIds.size;
+                async function deleteAllSales() {
+                    const { data: rows, error: readError } = await supabaseClient.from('sales').select('id');
+                    if (readError) throw readError;
+                    const ids = (rows || []).map(x => x.id).filter(x => x != null);
+                    if (!ids.length) return true;
+                    const { error: itemError } = await supabaseClient.from('sale_items').delete().in('sale_id', ids);
+                    if (itemError) throw itemError;
+                    const { error } = await supabaseClient.from('sales').delete().in('id', ids);
+                    if (error) throw error;
+                    return true;
+                }
 
-            // Umumiy qiymat = barcha mahsulotlarning narxi × qoldig'i.
-            const inventoryValue = products.reduce((sum, p) => {
-                return sum + ((Number(p.price) || 0) * (Number(p.stock) || 0));
-            }, 0);
+                async function getBalance() {
+                    const { data, error } = await supabaseClient.from('balance').select('amount').eq('id', 1).single();
+                    if (error) throw error;
+                    return Number(data?.amount || 0);
+                }
 
-            if (productCountEl) {
-                productCountEl.textContent = `${productCardCount} ta`;
+                return {
+                    getProducts, addProduct, updateProduct, deleteProduct, getSales, addSale, updateSale, deleteSale, deleteAllSales, getBalance,
+                    getCart: async () => readCart(),
+                    saveCart: async cart => { writeCart(cart); return cart; }
+                };
+            })();
+
+            /* ============ APP STATE ============ */
+            let products = [];
+            let sales = [];
+            let cart = {};
+            let cartAdjustment = 0;
+            let editingProductId = null;
+            let searchTerm = '';
+            // Eski telefon-local reset qiymatlari endi ishlatilmaydi.
+            localStorage.removeItem('todayMoneyAdjustment_' + todayStr());
+            localStorage.removeItem('todayCashAdjustment_' + todayStr());
+            localStorage.removeItem('todayCardAdjustment_' + todayStr());
+
+            /* ============ HELPERS ============ */
+            function formatSum(n) {
+                n = Math.round(Number(n) || 0);
+                return n.toLocaleString('ru-RU').replace(/,/g, ' ');
             }
-            if (inventoryValueEl) inventoryValueEl.textContent = formatSum(inventoryValue);
+            function todayStr() {
+                const d = new Date();
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+            function formatDateReadable(dstr) {
+                const [y, m, d] = dstr.split('-');
+                const months = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+                return `${parseInt(d)}-${months[parseInt(m) - 1]} ${y}`;
+            }
+            function step(unit) { return unit === 'kg' ? 0.1 : 1; }
+            function fmtQty(qty, unit) {
+                if (unit === 'kg') {
+                    const grams = Math.round(qty * 1000);
+                    return grams % 1000 === 0 ? String(grams / 1000) : (grams / 1000).toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+                }
+                return qty.toString();
+            }
+            function fmtGrams(qty) {
+                return String(Math.round(qty * 1000));
+            }
 
-            // Umumiy balans endi Supabase'dagi store_balance jadvalidan API orqali keladi.
-            // Bu qiymat sales jadvaliga trigger orqali avtomatik yangilanib boradi,
-            // shu sabab har bir telefon/qurilmada bir xil, ishonchli raqam ko'rinadi.
-            if (balanceEl) {
-                try {
-                    const balance = await mockApi.getBalance();
-                    balanceEl.textContent = formatSum(balance);
-                } catch (err) {
-                    console.warn('Balansni olishda xatolik:', err);
-                    balanceEl.textContent = '—';
+            /* ============ RENDER: PRODUCT GRID ============ */
+            function renderGrid() {
+                const grid = document.getElementById('productGrid');
+                const term = searchTerm.trim().toLowerCase();
+                const filtered = products.filter(p => {
+                    const name = String(p.name || '').toLowerCase();
+                    const price = String(Number(p.price || 0)).toLowerCase();
+                    const formattedPrice = formatSum(Number(p.price || 0)).toLowerCase();
+                    return name.includes(term) || price.includes(term) || formattedPrice.includes(term);
+                });
+
+                if (filtered.length === 0) {
+                    grid.innerHTML = `<div class="empty-state"><b>Mahsulot topilmadi</b>${products.length === 0 ? "Yuqoridagi tugma orqali birinchi mahsulotni qo'shing" : "Qidiruvga mos mahsulot yo'q"}</div>`;
+                    return;
+                }
+
+                grid.innerHTML = filtered.map(p => {
+                    const qty = cart[p.id] || 0;
+                    const subtotal = qty * p.price;
+                    return `
+        <div class="card ${qty > 0 ? 'has-qty' : ''}" data-id="${p.id}">
+        <button class="edit-ico" data-edit="${p.id}" title="Tahrirlash">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </button>
+        <button class="product-edit-btn" data-edit="${p.id}" type="button">
+            ✏️ O'zgartirish
+        </button>
+        <button class="product-remove-btn" data-remove-product="${p.id}" type="button" title="Mahsulotni o'chirish">×</button>
+        <div class="card-top">
+            <div class="card-name">${escapeHtml(p.name)}</div>
+        </div>
+        <span class="unit-badge">${p.unit === 'kg' ? 'KG' : 'DONA'}</span>
+        <div class="card-price" style="margin-top:10px;">${formatSum(p.price)} <span>so'm / ${p.unit === 'kg' ? 'kg' : 'dona'}</span></div>
+        <div class="card-stock">Qoldig'i: <b>${fmtQty(p.stock, p.unit)} ${p.unit === 'kg' ? 'kg' : 'dona'}</b></div>
+        <div class="qty-row">
+            ${p.unit === 'kg'
+                            ? `<div class="kg-qty-wrap">
+                <input class="kg-qty-input" data-kgqty="${p.id}" type="number" min="0" max="${p.stock * 1000}" step="1" value="${qty > 0 ? fmtGrams(qty) : ''}" placeholder="gramm" title="Grammini o'zingiz kiriting">
+                <span class="kg-unit">gr</span>
+                </div>`
+                            : `<div class="stepper">
+                <button class="minus" data-minus="${p.id}">−</button>
+                <span class="qty" data-qtyfield="${p.id}" title="Aniq miqdor kiritish">${fmtQty(qty, p.unit)}</span>
+                <button class="plus" data-plus="${p.id}">+</button>
+                </div>`
+                        }
+            ${qty > 0 ? `<div class="card-price">${formatSum(p.price)} so'm/${p.unit}</div>
+                <div class="card-subtotal">${formatSum(subtotal)} so'm</div>` : ''}
+        </div>
+        </div>`;
+                }).join('');
+            }
+
+            function escapeHtml(str) {
+                const d = document.createElement('div');
+                d.textContent = str;
+                return d.innerHTML;
+            }
+
+            /* ============ TOP SUMMARY ============ */
+            async function renderTopStats() {
+                const productCountEl = document.getElementById('topProductCount');
+                const inventoryValueEl = document.getElementById('topInventoryValue');
+                const balanceEl = document.getElementById('topBalance');
+
+                // Jami tovar = nechta alohida ID (mahsulot turi/card) mavjudligi.
+                // Qoldiqdagi dona soni yoki kg miqdori bu hisobga ta'sir qilmaydi.
+                const uniqueProductIds = new Set(
+                    products.map(p => String(p.id)).filter(Boolean)
+                );
+                const productCardCount = uniqueProductIds.size;
+
+                // Umumiy qiymat = barcha mahsulotlarning narxi × qoldig'i.
+                const inventoryValue = products.reduce((sum, p) => {
+                    return sum + ((Number(p.price) || 0) * (Number(p.stock) || 0));
+                }, 0);
+
+                if (productCountEl) {
+                    productCountEl.textContent = `${productCardCount} ta`;
+                }
+                if (inventoryValueEl) inventoryValueEl.textContent = formatSum(inventoryValue);
+
+                // Umumiy balans endi Supabase'dagi balance jadvalidan API orqali keladi.
+                // Bu qiymat sales jadvaliga trigger orqali avtomatik yangilanib boradi,
+                // shu sabab har bir telefon/qurilmada bir xil, ishonchli raqam ko'rinadi.
+                if (balanceEl) {
+                    try {
+                        const balance = await mockApi.getBalance();
+                        balanceEl.textContent = formatSum(balance);
+                    } catch (err) {
+                        console.warn('Balansni olishda xatolik:', err);
+                        balanceEl.textContent = '—';
+                    }
                 }
             }
-        }
 
-        /* ============ RENDER: CART BAR ============ */
-        function renderCartBar() {
-            const bar = document.getElementById('cartBar');
-            const entries = Object.entries(cart).filter(([id, q]) => q > 0);
+            /* ============ RENDER: CART BAR ============ */
+            function renderCartBar() {
+                const bar = document.getElementById('cartBar');
+                const entries = Object.entries(cart).filter(([id, q]) => q > 0);
 
-            const toggle = document.getElementById('openCartBar');
+                const toggle = document.getElementById('openCartBar');
 
-            if (entries.length === 0) {
-                bar.classList.remove('show', 'is-closed');
-                if (toggle) toggle.classList.remove('show');
+                if (entries.length === 0) {
+                    bar.classList.remove('show', 'is-closed');
+                    if (toggle) toggle.classList.remove('show');
+                    const today = todayStr();
+                    const paidToday = sales.filter(s => !s.isDebt && s.paid !== false && s.date === today);
+                    const cash = paidToday.filter(s => (s.paymentMethod || 'cash') === 'cash').reduce((sum, s) => sum + Number(s.total || 0), 0);
+                    const card = paidToday.filter(s => s.paymentMethod === 'card').reduce((sum, s) => sum + Number(s.total || 0), 0);
+                    document.getElementById('cashTotal').textContent = formatSum(cash);
+                    document.getElementById('cardTotal').textContent = formatSum(card);
+                    document.getElementById('allPaymentTotal').textContent = formatSum(cash + card);
+                    renderTopStats();
+                    return;
+                }
+                bar.classList.add('show');
+                bar.classList.toggle('is-closed', cartBarClosed);
+                if (toggle) toggle.classList.toggle('show', cartBarClosed);
+
+                const itemsHtml = entries.map(([id, qty]) => {
+                    const p = products.find(pp => String(pp.id) === String(id));
+                    if (!p) return '';
+                    const unitText = p.unit === 'kg' ? 'kg' : 'dona';
+                    return `
+                        <div class="cart-chip" data-cart-id="${id}">
+                            <div class="cart-chip-name">
+                                <span class="cart-chip-title">${escapeHtml(p.name)}</span>
+                                <span class="q">×${fmtQty(qty, p.unit)} ${unitText}</span>
+                            </div>
+                            <div class="cart-chip-controls">
+                                <button type="button" class="cart-minus" data-cart-minus="${id}" aria-label="${escapeHtml(p.name)} kamaytirish">−</button>
+                                <span class="cart-chip-qty">${fmtQty(qty, p.unit)}</span>
+                                <button type="button" class="cart-plus" data-cart-plus="${id}" aria-label="${escapeHtml(p.name)} qo'shish">+</button>
+                                <button type="button" class="cart-remove" data-cart-remove="${id}" aria-label="${escapeHtml(p.name)} ni olib tashlash">×</button>
+                            </div>
+                        </div>`;
+                }).join('');
+                document.getElementById('cartItems').innerHTML = itemsHtml;
+
+                const grossTotal = entries.reduce((sum, [id, qty]) => {
+                    const p = products.find(pp => String(pp.id) === String(id));
+                    return sum + (p ? p.price * qty : 0);
+                }, 0);
+                cartAdjustment = Math.min(Math.max(0, Number(cartAdjustment) || 0), grossTotal);
+                const total = Math.max(0, grossTotal - cartAdjustment);
+                document.getElementById('cartTotal').textContent = formatSum(total);
+                renderTopStats();
+
                 const today = todayStr();
                 const paidToday = sales.filter(s => !s.isDebt && s.paid !== false && s.date === today);
                 const cash = paidToday.filter(s => (s.paymentMethod || 'cash') === 'cash').reduce((sum, s) => sum + Number(s.total || 0), 0);
@@ -2465,1032 +2508,989 @@
                 document.getElementById('cashTotal').textContent = formatSum(cash);
                 document.getElementById('cardTotal').textContent = formatSum(card);
                 document.getElementById('allPaymentTotal').textContent = formatSum(cash + card);
-                renderTopStats();
-                return;
-            }
-            bar.classList.add('show');
-            bar.classList.toggle('is-closed', cartBarClosed);
-            if (toggle) toggle.classList.toggle('show', cartBarClosed);
-
-            const itemsHtml = entries.map(([id, qty]) => {
-                const p = products.find(pp => String(pp.id) === String(id));
-                if (!p) return '';
-                const unitText = p.unit === 'kg' ? 'kg' : 'dona';
-                return `
-                    <div class="cart-chip" data-cart-id="${id}">
-                        <div class="cart-chip-name">
-                            <span class="cart-chip-title">${escapeHtml(p.name)}</span>
-                            <span class="q">×${fmtQty(qty, p.unit)} ${unitText}</span>
-                        </div>
-                        <div class="cart-chip-controls">
-                            <button type="button" class="cart-minus" data-cart-minus="${id}" aria-label="${escapeHtml(p.name)} kamaytirish">−</button>
-                            <span class="cart-chip-qty">${fmtQty(qty, p.unit)}</span>
-                            <button type="button" class="cart-plus" data-cart-plus="${id}" aria-label="${escapeHtml(p.name)} qo'shish">+</button>
-                            <button type="button" class="cart-remove" data-cart-remove="${id}" aria-label="${escapeHtml(p.name)} ni olib tashlash">×</button>
-                        </div>
-                    </div>`;
-            }).join('');
-            document.getElementById('cartItems').innerHTML = itemsHtml;
-
-            const grossTotal = entries.reduce((sum, [id, qty]) => {
-                const p = products.find(pp => String(pp.id) === String(id));
-                return sum + (p ? p.price * qty : 0);
-            }, 0);
-            cartAdjustment = Math.min(Math.max(0, Number(cartAdjustment) || 0), grossTotal);
-            const total = Math.max(0, grossTotal - cartAdjustment);
-            document.getElementById('cartTotal').textContent = formatSum(total);
-            renderTopStats();
-
-            const today = todayStr();
-            const paidToday = sales.filter(s => !s.isDebt && s.paid !== false && s.date === today);
-            const cash = paidToday.filter(s => (s.paymentMethod || 'cash') === 'cash').reduce((sum, s) => sum + Number(s.total || 0), 0);
-            const card = paidToday.filter(s => s.paymentMethod === 'card').reduce((sum, s) => sum + Number(s.total || 0), 0);
-            document.getElementById('cashTotal').textContent = formatSum(cash);
-            document.getElementById('cardTotal').textContent = formatSum(card);
-            document.getElementById('allPaymentTotal').textContent = formatSum(cash + card);
-        }
-
-        /* ============ RENDER: TODAY TOTAL ============ */
-        function renderTodayTotal() {
-            const today = todayStr();
-            const total = sales
-                .filter(s => (!s.isDebt && s.date === today) || (s.isDebt && s.paid && s.paidDate === today))
-                .reduce((sum, s) => sum + (Number(s.total) || 0), 0);
-
-            // Bugungi hisob endi to'liq Supabase'dan keladi.
-            // Reset/ayirish ham DB ga manfiy manual yozuv sifatida saqlanadi,
-            // shuning uchun barcha telefonlarda bir xil summa chiqadi.
-            const visibleTotal = Math.max(0, total);
-
-            const el = document.getElementById('todayTotal');
-            if (el) {
-                el.textContent = formatSum(visibleTotal);
-                el.classList.remove('pulse');
-                void el.offsetWidth;
-                el.classList.add('pulse');
             }
 
-            const dateEl = document.getElementById('todayDate');
-            if (dateEl) dateEl.textContent = formatDateReadable(today);
+            /* ============ RENDER: TODAY TOTAL ============ */
+            function renderTodayTotal() {
+                const today = todayStr();
+                const total = sales
+                    .filter(s => (!s.isDebt && s.date === today) || (s.isDebt && s.paid && s.paidDate === today))
+                    .reduce((sum, s) => sum + (Number(s.total) || 0), 0);
 
-            const debtCount = sales.filter(s => s.isDebt && !s.paid).length;
-            const debtBtn = document.getElementById('debtorsBtn');
-            if (debtBtn) debtBtn.textContent = debtCount > 0 ? `Qarzdorlar (${debtCount})` : 'Qarzdorlar';
+                // Bugungi hisob endi to'liq Supabase'dan keladi.
+                // Reset/ayirish ham DB ga manfiy manual yozuv sifatida saqlanadi,
+                // shuning uchun barcha telefonlarda bir xil summa chiqadi.
+                const visibleTotal = Math.max(0, total);
 
-            // Keep the detailed today's summary in sync too.
-            if (typeof renderTodaySummary === 'function') renderTodaySummary();
-        }
+                const el = document.getElementById('todayTotal');
+                if (el) {
+                    el.textContent = formatSum(visibleTotal);
+                    el.classList.remove('pulse');
+                    void el.offsetWidth;
+                    el.classList.add('pulse');
+                }
 
-        /* ============ CART LOGIC ============ */
-        async function changeQty(productId, delta) {
-            const p = products.find(pp => pp.id === productId);
-            if (!p) return;
-            const cur = cart[productId] || 0;
-            let next = Math.round((cur + delta) * 100) / 100;
-            if (next < 0) next = 0;
-            if (next > p.stock) next = p.stock;
-            if (next === 0) delete cart[productId]; else cart[productId] = next;
-            await mockApi.saveCart(cart);
-            renderGrid();
-            renderCartBar();
-            renderTodaySummary();
-        }
+                const dateEl = document.getElementById('todayDate');
+                if (dateEl) dateEl.textContent = formatDateReadable(today);
 
-        async function setKgQtyFromGrams(productId, gramsValue) {
-            const p = products.find(pp => pp.id === productId);
-            if (!p || p.unit !== 'kg') return;
+                const debtCount = sales.filter(s => s.isDebt && !s.paid).length;
+                const debtBtn = document.getElementById('debtorsBtn');
+                if (debtBtn) debtBtn.textContent = debtCount > 0 ? `Qarzdorlar (${debtCount})` : 'Qarzdorlar';
 
-            let grams = parseFloat(String(gramsValue).replace(',', '.'));
-            if (!Number.isFinite(grams) || grams < 0) grams = 0;
-
-            const maxGrams = p.stock * 1000;
-            if (grams > maxGrams) grams = maxGrams;
-
-            const kg = Math.round((grams / 1000) * 1000) / 1000;
-
-            if (kg === 0) delete cart[productId];
-            else cart[productId] = kg;
-
-            await mockApi.saveCart(cart);
-            renderGrid();
-            renderCartBar();
-        }
-
-        async function setExactQty(productId) {
-            const p = products.find(pp => pp.id === productId);
-            if (!p) return;
-            const cur = cart[productId] || 0;
-            const input = prompt(`"${p.name}" uchun miqdor kiriting (${p.unit === 'kg' ? 'kg' : 'dona'}):`, cur);
-            if (input === null) return;
-            let val = parseFloat(input.replace(',', '.'));
-            if (isNaN(val) || val < 0) val = 0;
-            if (val > p.stock) val = p.stock;
-            if (val === 0) delete cart[productId]; else cart[productId] = Math.round(val * 100) / 100;
-            await mockApi.saveCart(cart);
-            renderGrid();
-            renderCartBar();
-        }
-
-        async function cancelCart() {
-            cart = {};
-            cartAdjustment = 0;
-            await mockApi.saveCart(cart);
-            renderGrid();
-            renderCartBar();
-        }
-
-        async function collectCartItems() {
-            const entries = Object.entries(cart).filter(([id, q]) => q > 0);
-            const items = [];
-            let grossTotal = 0;
-            for (const [id, qty] of entries) {
-                const p = products.find(pp => String(pp.id) === String(id));
-                if (!p) continue;
-                const subtotal = qty * p.price;
-                grossTotal += subtotal;
-                items.push({ productId: p.id, name: p.name, unit: p.unit, price: p.price, qty, subtotal });
-            }
-            const discount = Math.min(Math.max(0, Number(cartAdjustment) || 0), grossTotal);
-            const total = Math.max(0, grossTotal - discount);
-            return { items, total, grossTotal, discount };
-        }
-
-        async function finalizeSale({ isDebt = false, customerName = '', note = '', paymentMethod = 'cash' } = {}) {
-            const { items, total, discount } = await collectCartItems();
-            if (items.length === 0) return;
-
-            // stock always decreases immediately since goods leave the shop
-            for (const it of items) {
-                const p = products.find(pp => pp.id === it.productId);
-                if (p) await mockApi.updateProduct(p.id, { stock: Math.max(0, Math.round((p.stock - it.qty) * 100) / 100) });
+                // Keep the detailed today's summary in sync too.
+                if (typeof renderTodaySummary === 'function') renderTodaySummary();
             }
 
-            const now = new Date();
-            const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-            const date = todayStr();
-
-            if (isDebt) {
-                await mockApi.addSale({ date, time, items, total, isDebt: true, paid: false, customerName, note });
-            } else {
-                await mockApi.addSale({ date, time, items, total, isDebt: false, paid: true, paymentMethod, discount: Number(discount || 0) });
-            }
-
-            cart = {};
-            cartAdjustment = 0;
-            await mockApi.saveCart(cart);
-            await loadAll();
-        }
-
-        async function payCart(paymentMethod = 'cash') {
-            await finalizeSale({ isDebt: false, paymentMethod });
-        }
-
-
-
-        function getTodayGrossTotal() {
-            const today = todayStr();
-            return sales.reduce((sum, s) => {
-                if (s.isDebt && !s.paid) return sum;
-                const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
-                if (date !== today) return sum;
-                return sum + (Number(s.total) || 0);
-            }, 0);
-        }
-
-        function openTodayAdjustModal() {
-            const total = getTodayGrossTotal();
-            if (total <= 0) {
-                alert("Bugun hali topilgan pul yo'q.");
-                return;
-            }
-            document.getElementById('todayAdjustAmount').value = '';
-            document.getElementById('todayAdjustNote').value = '';
-            document.getElementById('todayAdjustCurrent').textContent = formatSum(
-                Math.max(0, total)
-            );
-            document.getElementById('todayAdjustOverlay').classList.add('show');
-        }
-
-        function closeTodayAdjustModal() {
-            document.getElementById('todayAdjustOverlay').classList.remove('show');
-        }
-
-        async function saveTodayAdjustment() {
-            const total = getTodayGrossTotal();
-            let amount = Number(document.getElementById('todayAdjustAmount').value);
-
-            if (!Number.isFinite(amount) || amount < 0) {
-                alert("Summani to'g'ri kiriting.");
-                return;
-            }
-
-            amount = Math.min(amount, Math.max(0, total));
-            if (amount <= 0) {
-                closeTodayAdjustModal();
-                return;
-            }
-
-            const today = todayStr();
-            const now = new Date();
-            const noteInput = document.getElementById('todayAdjustNote');
-            const note = (noteInput?.value || '').trim();
-
-            try {
-                await mockApi.addSale({
-                    date: today,
-                    time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
-                    items: [],
-                    total: -Math.round(amount),
-                    paymentMethod: 'cash',
-                    isDebt: false,
-                    paid: true,
-                    manual: true,
-                    note: 'AYIRISH' + (note ? ' · ' + note : '')
-                });
-                closeTodayAdjustModal();
-                await loadAll();
-                if (document.getElementById('historyOverlay')?.classList.contains('show')) renderHistory();
-            } catch (err) {
-                console.error('Pul ayirish xatosi:', err);
-                alert("Pul ayirib bo'lmadi: " + (err?.message || err));
-            }
-        }
-
-        async function resetTodayMoney() {
-            const total = Math.max(0, getTodayGrossTotal());
-            if (total <= 0) {
-                alert("Bugun hisob 0 so'm.");
-                return;
-            }
-            if (!confirm("Bugungi hisobni 0 qilishni xohlaysizmi?")) return;
-
-            const today = todayStr();
-            const now = new Date();
-            try {
-                await mockApi.addSale({
-                    date: today,
-                    time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
-                    items: [],
-                    total: -Math.round(total),
-                    paymentMethod: 'cash',
-                    isDebt: false,
-                    paid: true,
-                    manual: true,
-                    note: 'RESET'
-                });
-                await loadAll();
-                if (document.getElementById('historyOverlay')?.classList.contains('show')) renderHistory();
-            } catch (err) {
-                console.error('Reset xatosi:', err);
-                alert("Reset qilib bo'lmadi: " + (err?.message || err));
-            }
-        }
-
-        function getCurrentCartGrossTotal() {
-            return Object.entries(cart).filter(([id, q]) => q > 0).reduce((sum, [id, qty]) => {
-                const p = products.find(pp => String(pp.id) === String(id));
-                return sum + (p ? Number(p.price) * Number(qty) : 0);
-            }, 0);
-        }
-
-        function openAdjustModal() {
-            const gross = getCurrentCartGrossTotal();
-            if (gross <= 0) {
-                alert("Avval savatga tovar qo'shing.");
-                return;
-            }
-            document.getElementById('adjustAmount').value = '';
-            document.getElementById('adjustNote').value = '';
-            document.getElementById('adjustCurrentTotal').textContent = formatSum(Math.max(0, gross - cartAdjustment));
-            document.getElementById('adjustOverlay').classList.add('show');
-        }
-
-        function closeAdjustModal() {
-            document.getElementById('adjustOverlay').classList.remove('show');
-        }
-
-        function saveAdjustment() {
-            const gross = getCurrentCartGrossTotal();
-            let amount = Number(document.getElementById('adjustAmount').value);
-            if (!Number.isFinite(amount) || amount < 0) {
-                alert("Ayiriladigan summani to'g'ri kiriting.");
-                return;
-            }
-            if (amount > gross) {
-                amount = gross;
-                alert("Ayirish summasi jami hisobdan katta bo'lgani uchun jami 0 so'm qilindi.");
-            }
-            cartAdjustment = Math.round(amount * 100) / 100;
-            closeAdjustModal();
-            renderCartBar();
-        }
-
-        async function resetCurrentTotal() {
-            const gross = getCurrentCartGrossTotal();
-            if (gross <= 0) {
-                cartAdjustment = 0;
+            /* ============ CART LOGIC ============ */
+            async function changeQty(productId, delta) {
+                const p = products.find(pp => pp.id === productId);
+                if (!p) return;
+                const cur = cart[productId] || 0;
+                let next = Math.round((cur + delta) * 100) / 100;
+                if (next < 0) next = 0;
+                if (next > p.stock) next = p.stock;
+                if (next === 0) delete cart[productId]; else cart[productId] = next;
+                await mockApi.saveCart(cart);
+                renderGrid();
                 renderCartBar();
-                return;
+                renderTodaySummary();
             }
-            if (confirm("Jami hisobni reset qilib, savatdagi tovarlarni ham bekor qilasizmi?")) {
+
+            async function setKgQtyFromGrams(productId, gramsValue) {
+                const p = products.find(pp => pp.id === productId);
+                if (!p || p.unit !== 'kg') return;
+
+                let grams = parseFloat(String(gramsValue).replace(',', '.'));
+                if (!Number.isFinite(grams) || grams < 0) grams = 0;
+
+                const maxGrams = p.stock * 1000;
+                if (grams > maxGrams) grams = maxGrams;
+
+                const kg = Math.round((grams / 1000) * 1000) / 1000;
+
+                if (kg === 0) delete cart[productId];
+                else cart[productId] = kg;
+
+                await mockApi.saveCart(cart);
+                renderGrid();
+                renderCartBar();
+            }
+
+            async function setExactQty(productId) {
+                const p = products.find(pp => pp.id === productId);
+                if (!p) return;
+                const cur = cart[productId] || 0;
+                const input = prompt(`"${p.name}" uchun miqdor kiriting (${p.unit === 'kg' ? 'kg' : 'dona'}):`, cur);
+                if (input === null) return;
+                let val = parseFloat(input.replace(',', '.'));
+                if (isNaN(val) || val < 0) val = 0;
+                if (val > p.stock) val = p.stock;
+                if (val === 0) delete cart[productId]; else cart[productId] = Math.round(val * 100) / 100;
+                await mockApi.saveCart(cart);
+                renderGrid();
+                renderCartBar();
+            }
+
+            async function cancelCart() {
                 cart = {};
                 cartAdjustment = 0;
                 await mockApi.saveCart(cart);
                 renderGrid();
                 renderCartBar();
             }
-        }
 
-        /* ============ PRODUCT MODAL ============ */
-        function openProductModal(product) {
-            editingProductId = product ? product.id : null;
-            document.getElementById('productModalTitle').textContent = product ? "Mahsulotni tahrirlash" : "Mahsulot qo'shish";
-            document.getElementById('pName').value = product ? product.name : '';
-            document.getElementById('pPrice').value = product ? product.price : '';
-            document.getElementById('pStock').value = product ? product.stock : '';
-            setUnitSwitch(product ? product.unit : 'dona');
-            document.getElementById('deleteProductBtn').style.display = product ? 'block' : 'none';
-            document.getElementById('productOverlay').classList.add('show');
-        }
-        function closeProductModal() {
-            document.getElementById('productOverlay').classList.remove('show');
-            editingProductId = null;
-        }
-        function setUnitSwitch(unit) {
-            document.getElementById('unitDona').classList.toggle('active', unit === 'dona');
-            document.getElementById('unitKg').classList.toggle('active', unit === 'kg');
-            document.getElementById('stockLabel').textContent = `Qoldig'i (${unit === 'kg' ? 'kg' : 'dona'})`;
-        }
-        function getSelectedUnit() {
-            return document.getElementById('unitKg').classList.contains('active') ? 'kg' : 'dona';
-        }
-
-        async function saveProduct() {
-            const name = document.getElementById('pName').value.trim();
-            const price = parseFloat(document.getElementById('pPrice').value);
-            const stock = parseFloat(document.getElementById('pStock').value);
-            const unit = getSelectedUnit();
-
-            if (!name) { alert("Mahsulot nomini kiriting"); return; }
-            if (isNaN(price) || price < 0) { alert("Narxni to'g'ri kiriting"); return; }
-            if (isNaN(stock) || stock < 0) { alert("Qoldiqni to'g'ri kiriting"); return; }
-
-            if (editingProductId) {
-                await mockApi.updateProduct(editingProductId, { name, price, stock, unit });
-            } else {
-                await mockApi.addProduct({ name, price, stock, unit });
-            }
-            closeProductModal();
-            await loadAll();
-        }
-
-        async function deleteProduct() {
-            if (!editingProductId) return;
-            if (!confirm("Bu mahsulotni o'chirmoqchimisiz?")) return;
-            await mockApi.deleteProduct(editingProductId);
-            closeProductModal();
-            await loadAll();
-        }
-
-        /* ============ DEBT SALE (Qarzga) ============ */
-        function openDebtModal() {
-            document.getElementById('dName').value = '';
-            document.getElementById('dNote').value = '';
-            document.getElementById('debtOverlay').classList.add('show');
-        }
-        function closeDebtModal() {
-            document.getElementById('debtOverlay').classList.remove('show');
-        }
-        async function saveDebt() {
-            const customerName = document.getElementById('dName').value.trim();
-            const note = document.getElementById('dNote').value.trim();
-            if (!customerName) { alert("Mijoz ismini kiriting"); return; }
-            closeDebtModal();
-            await finalizeSale({ isDebt: true, customerName, note });
-        }
-
-        /* ============ QARZDORLAR (DEBTORS) ============ */
-        function renderDebtors() {
-            const container = document.getElementById('debtorsList');
-            const unpaid = sales.filter(s => s.isDebt && !s.paid).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
-
-            if (unpaid.length === 0) {
-                container.innerHTML = `<div class="no-data">Hozircha qarzdorlar yo'q.</div>`;
-                return;
+            async function collectCartItems() {
+                const entries = Object.entries(cart).filter(([id, q]) => q > 0);
+                const items = [];
+                let grossTotal = 0;
+                for (const [id, qty] of entries) {
+                    const p = products.find(pp => String(pp.id) === String(id));
+                    if (!p) continue;
+                    const subtotal = qty * p.price;
+                    grossTotal += subtotal;
+                    items.push({ productId: p.id, name: p.name, unit: p.unit, price: p.price, qty, subtotal });
+                }
+                const discount = Math.min(Math.max(0, Number(cartAdjustment) || 0), grossTotal);
+                const total = Math.max(0, grossTotal - discount);
+                return { items, total, grossTotal, discount };
             }
 
-            const totalDebt = unpaid.reduce((s, x) => s + x.total, 0);
-            const banner = `<div class="debt-total-banner"><span>Jami qarzlar</span><span>${formatSum(totalDebt)} so'm</span></div>`;
+            async function finalizeSale({ isDebt = false, customerName = '', note = '', paymentMethod = 'cash' } = {}) {
+                const { items, total, discount } = await collectCartItems();
+                if (items.length === 0) return;
 
-            const rows = unpaid.map(sale => `
-    <div class="debtor-card">
-      <div class="debtor-top">
-        <div>
-          <div class="debtor-name">${escapeHtml(sale.customerName || 'Mijoz')}</div>
-          <div class="debtor-date">${formatDateReadable(sale.date)} · ${sale.time}</div>
-        </div>
-      </div>
-      ${sale.note ? `<div class="debtor-note">${escapeHtml(sale.note)}</div>` : ''}
-      <div class="debtor-items">
-        ${sale.items.map(it => `<div><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
-      </div>
-      <div class="debtor-foot">
-        <div class="debtor-total">${formatSum(sale.total)} so'm</div>
-        <button class="btn-settle" data-settle="${sale.id}">✓ To'ladi</button>
-      </div>
-    </div>
-  `).join('');
+                // stock always decreases immediately since goods leave the shop
+                for (const it of items) {
+                    const p = products.find(pp => pp.id === it.productId);
+                    if (p) await mockApi.updateProduct(p.id, { stock: Math.max(0, Math.round((p.stock - it.qty) * 100) / 100) });
+                }
 
-            container.innerHTML = banner + rows;
-        }
-
-        async function settleDebt(saleId) {
-            const now = new Date();
-            await mockApi.updateSale(saleId, {
-                paid: true,
-                paidDate: todayStr(),
-                paidTime: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
-            });
-            await loadAll();
-            renderDebtors();
-        }
-        function openCashModal() {
-            document.getElementById('cAmount').value = '';
-            document.getElementById('cNote').value = '';
-            document.getElementById('cashOverlay').classList.add('show');
-        }
-        function closeCashModal() {
-            document.getElementById('cashOverlay').classList.remove('show');
-        }
-
-        /* ============ NAQD PUL QO'SHISH ============ */
-        window.saveCash = async function saveCash() {
-            const amountInput = document.getElementById('cAmount');
-            const noteInput = document.getElementById('cNote');
-            const amount = parseFloat(String(amountInput?.value || '').replace(/\s/g, '').replace(',', '.'));
-            const note = (noteInput?.value || '').trim();
-
-            if (!Number.isFinite(amount) || amount <= 0) {
-                alert("Summani to'g'ri kiriting");
-                return;
-            }
-
-            const btn = document.getElementById('saveCashBtn');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Saqlanmoqda...';
-            }
-
-            try {
                 const now = new Date();
-                await mockApi.addSale({
-                    date: todayStr(),
-                    time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
-                    items: [],
-                    total: amount,
-                    paymentMethod: 'cash',
-                    isDebt: false,
+                const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+                const date = todayStr();
+
+                if (isDebt) {
+                    await mockApi.addSale({ date, time, items, total, isDebt: true, paid: false, customerName, note });
+                } else {
+                    await mockApi.addSale({ date, time, items, total, isDebt: false, paid: true, paymentMethod, discount: Number(discount || 0) });
+                }
+
+                cart = {};
+                cartAdjustment = 0;
+                await mockApi.saveCart(cart);
+                await loadAll();
+            }
+
+            async function payCart(paymentMethod = 'cash') {
+                await finalizeSale({ isDebt: false, paymentMethod });
+            }
+
+
+
+            function getTodayGrossTotal() {
+                const today = todayStr();
+                return sales.reduce((sum, s) => {
+                    if (s.isDebt && !s.paid) return sum;
+                    const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
+                    if (date !== today) return sum;
+                    return sum + (Number(s.total) || 0);
+                }, 0);
+            }
+
+            function openTodayAdjustModal() {
+                const total = getTodayGrossTotal();
+                if (total <= 0) {
+                    alert("Bugun hali topilgan pul yo'q.");
+                    return;
+                }
+                document.getElementById('todayAdjustAmount').value = '';
+                document.getElementById('todayAdjustNote').value = '';
+                document.getElementById('todayAdjustCurrent').textContent = formatSum(
+                    Math.max(0, total)
+                );
+                document.getElementById('todayAdjustOverlay').classList.add('show');
+            }
+
+            function closeTodayAdjustModal() {
+                document.getElementById('todayAdjustOverlay').classList.remove('show');
+            }
+
+            async function saveTodayAdjustment() {
+                const total = getTodayGrossTotal();
+                let amount = Number(document.getElementById('todayAdjustAmount').value);
+
+                if (!Number.isFinite(amount) || amount < 0) {
+                    alert("Summani to'g'ri kiriting.");
+                    return;
+                }
+
+                amount = Math.min(amount, Math.max(0, total));
+                if (amount <= 0) {
+                    closeTodayAdjustModal();
+                    return;
+                }
+
+                const today = todayStr();
+                const now = new Date();
+                const noteInput = document.getElementById('todayAdjustNote');
+                const note = (noteInput?.value || '').trim();
+
+                try {
+                    await mockApi.addSale({
+                        date: today,
+                        time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+                        items: [],
+                        total: -Math.round(amount),
+                        paymentMethod: 'cash',
+                        isDebt: false,
+                        paid: true,
+                        manual: true,
+                        note: 'AYIRISH' + (note ? ' · ' + note : '')
+                    });
+                    closeTodayAdjustModal();
+                    await loadAll();
+                    if (document.getElementById('historyOverlay')?.classList.contains('show')) renderHistory();
+                } catch (err) {
+                    console.error('Pul ayirish xatosi:', err);
+                    alert("Pul ayirib bo'lmadi: " + (err?.message || err));
+                }
+            }
+
+            async function resetTodayMoney() {
+                const total = Math.max(0, getTodayGrossTotal());
+                if (total <= 0) {
+                    alert("Bugun hisob 0 so'm.");
+                    return;
+                }
+                if (!confirm("Bugungi hisobni 0 qilishni xohlaysizmi?")) return;
+
+                const today = todayStr();
+                const now = new Date();
+                try {
+                    await mockApi.addSale({
+                        date: today,
+                        time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+                        items: [],
+                        total: -Math.round(total),
+                        paymentMethod: 'cash',
+                        isDebt: false,
+                        paid: true,
+                        manual: true,
+                        note: 'RESET'
+                    });
+                    await loadAll();
+                    if (document.getElementById('historyOverlay')?.classList.contains('show')) renderHistory();
+                } catch (err) {
+                    console.error('Reset xatosi:', err);
+                    alert("Reset qilib bo'lmadi: " + (err?.message || err));
+                }
+            }
+
+            function getCurrentCartGrossTotal() {
+                return Object.entries(cart).filter(([id, q]) => q > 0).reduce((sum, [id, qty]) => {
+                    const p = products.find(pp => String(pp.id) === String(id));
+                    return sum + (p ? Number(p.price) * Number(qty) : 0);
+                }, 0);
+            }
+
+            function openAdjustModal() {
+                const gross = getCurrentCartGrossTotal();
+                if (gross <= 0) {
+                    alert("Avval savatga tovar qo'shing.");
+                    return;
+                }
+                document.getElementById('adjustAmount').value = '';
+                document.getElementById('adjustNote').value = '';
+                document.getElementById('adjustCurrentTotal').textContent = formatSum(Math.max(0, gross - cartAdjustment));
+                document.getElementById('adjustOverlay').classList.add('show');
+            }
+
+            function closeAdjustModal() {
+                document.getElementById('adjustOverlay').classList.remove('show');
+            }
+
+            function saveAdjustment() {
+                const gross = getCurrentCartGrossTotal();
+                let amount = Number(document.getElementById('adjustAmount').value);
+                if (!Number.isFinite(amount) || amount < 0) {
+                    alert("Ayiriladigan summani to'g'ri kiriting.");
+                    return;
+                }
+                if (amount > gross) {
+                    amount = gross;
+                    alert("Ayirish summasi jami hisobdan katta bo'lgani uchun jami 0 so'm qilindi.");
+                }
+                cartAdjustment = Math.round(amount * 100) / 100;
+                closeAdjustModal();
+                renderCartBar();
+            }
+
+            async function resetCurrentTotal() {
+                const gross = getCurrentCartGrossTotal();
+                if (gross <= 0) {
+                    cartAdjustment = 0;
+                    renderCartBar();
+                    return;
+                }
+                if (confirm("Jami hisobni reset qilib, savatdagi tovarlarni ham bekor qilasizmi?")) {
+                    cart = {};
+                    cartAdjustment = 0;
+                    await mockApi.saveCart(cart);
+                    renderGrid();
+                    renderCartBar();
+                }
+            }
+
+            /* ============ PRODUCT MODAL ============ */
+            function openProductModal(product) {
+                editingProductId = product ? product.id : null;
+                document.getElementById('productModalTitle').textContent = product ? "Mahsulotni tahrirlash" : "Mahsulot qo'shish";
+                document.getElementById('pName').value = product ? product.name : '';
+                document.getElementById('pPrice').value = product ? product.price : '';
+                document.getElementById('pStock').value = product ? product.stock : '';
+                setUnitSwitch(product ? product.unit : 'dona');
+                document.getElementById('deleteProductBtn').style.display = product ? 'block' : 'none';
+                document.getElementById('productOverlay').classList.add('show');
+            }
+            function closeProductModal() {
+                document.getElementById('productOverlay').classList.remove('show');
+                editingProductId = null;
+            }
+            function setUnitSwitch(unit) {
+                document.getElementById('unitDona').classList.toggle('active', unit === 'dona');
+                document.getElementById('unitKg').classList.toggle('active', unit === 'kg');
+                document.getElementById('stockLabel').textContent = `Qoldig'i (${unit === 'kg' ? 'kg' : 'dona'})`;
+            }
+            function getSelectedUnit() {
+                return document.getElementById('unitKg').classList.contains('active') ? 'kg' : 'dona';
+            }
+
+            async function saveProduct() {
+                const name = document.getElementById('pName').value.trim();
+                const price = parseFloat(document.getElementById('pPrice').value);
+                const stock = parseFloat(document.getElementById('pStock').value);
+                const unit = getSelectedUnit();
+
+                if (!name) { alert("Mahsulot nomini kiriting"); return; }
+                if (isNaN(price) || price < 0) { alert("Narxni to'g'ri kiriting"); return; }
+                if (isNaN(stock) || stock < 0) { alert("Qoldiqni to'g'ri kiriting"); return; }
+
+                if (editingProductId) {
+                    await mockApi.updateProduct(editingProductId, { name, price, stock, unit });
+                } else {
+                    await mockApi.addProduct({ name, price, stock, unit });
+                }
+                closeProductModal();
+                await loadAll();
+            }
+
+            async function deleteProduct() {
+                if (!editingProductId) return;
+                if (!confirm("Bu mahsulotni o'chirmoqchimisiz?")) return;
+                await mockApi.deleteProduct(editingProductId);
+                closeProductModal();
+                await loadAll();
+            }
+
+            /* ============ DEBT SALE (Qarzga) ============ */
+            function openDebtModal() {
+                document.getElementById('dName').value = '';
+                document.getElementById('dNote').value = '';
+                document.getElementById('debtOverlay').classList.add('show');
+            }
+            function closeDebtModal() {
+                document.getElementById('debtOverlay').classList.remove('show');
+            }
+            async function saveDebt() {
+                const customerName = document.getElementById('dName').value.trim();
+                const note = document.getElementById('dNote').value.trim();
+                if (!customerName) { alert("Mijoz ismini kiriting"); return; }
+                closeDebtModal();
+                await finalizeSale({ isDebt: true, customerName, note });
+            }
+
+            /* ============ QARZDORLAR (DEBTORS) ============ */
+            function renderDebtors() {
+                const container = document.getElementById('debtorsList');
+                const unpaid = sales.filter(s => s.isDebt && !s.paid).sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+
+                if (unpaid.length === 0) {
+                    container.innerHTML = `<div class="no-data">Hozircha qarzdorlar yo'q.</div>`;
+                    return;
+                }
+
+                const totalDebt = unpaid.reduce((s, x) => s + x.total, 0);
+                const banner = `<div class="debt-total-banner"><span>Jami qarzlar</span><span>${formatSum(totalDebt)} so'm</span></div>`;
+
+                const rows = unpaid.map(sale => `
+        <div class="debtor-card">
+        <div class="debtor-top">
+            <div>
+            <div class="debtor-name">${escapeHtml(sale.customerName || 'Mijoz')}</div>
+            <div class="debtor-date">${formatDateReadable(sale.date)} · ${sale.time}</div>
+            </div>
+        </div>
+        ${sale.note ? `<div class="debtor-note">${escapeHtml(sale.note)}</div>` : ''}
+        <div class="debtor-items">
+            ${sale.items.map(it => `<div><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
+        </div>
+        <div class="debtor-foot">
+            <div class="debtor-total">${formatSum(sale.total)} so'm</div>
+            <button class="btn-settle" data-settle="${sale.id}">✓ To'ladi</button>
+        </div>
+        </div>
+    `).join('');
+
+                container.innerHTML = banner + rows;
+            }
+
+            async function settleDebt(saleId) {
+                const now = new Date();
+                await mockApi.updateSale(saleId, {
                     paid: true,
-                    manual: true,
-                    note
+                    paidDate: todayStr(),
+                    paidTime: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
+                });
+                await loadAll();
+                renderDebtors();
+            }
+            function openCashModal() {
+                document.getElementById('cAmount').value = '';
+                document.getElementById('cNote').value = '';
+                document.getElementById('cashOverlay').classList.add('show');
+            }
+            function closeCashModal() {
+                document.getElementById('cashOverlay').classList.remove('show');
+            }
+
+            /* ============ NAQD PUL QO'SHISH ============ */
+            window.saveCash = async function saveCash() {
+                const amountInput = document.getElementById('cAmount');
+                const noteInput = document.getElementById('cNote');
+                const amount = parseFloat(String(amountInput?.value || '').replace(/\s/g, '').replace(',', '.'));
+                const note = (noteInput?.value || '').trim();
+
+                if (!Number.isFinite(amount) || amount <= 0) {
+                    alert("Summani to'g'ri kiriting");
+                    return;
+                }
+
+                const btn = document.getElementById('saveCashBtn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = 'Saqlanmoqda...';
+                }
+
+                try {
+                    const now = new Date();
+                    await mockApi.addSale({
+                        date: todayStr(),
+                        time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+                        items: [],
+                        total: amount,
+                        paymentMethod: 'cash',
+                        isDebt: false,
+                        paid: true,
+                        manual: true,
+                        note
+                    });
+
+                    closeCashModal();
+                    await loadAll();
+                } catch (err) {
+                    console.error('Naqd pul qo\'shish xatosi:', err);
+                    alert("Naqd pul qo'shib bo'lmadi: " + (err?.message || err));
+                } finally {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.textContent = "Qo'shish";
+                    }
+                }
+            }
+
+            /* ============ HISTORY MODAL ============ */
+            let historyTab = 'days';
+
+
+            function renderTodaySummary() {
+                const today = todayStr();
+                let cash = 0, card = 0, total = 0;
+
+                sales.forEach(s => {
+                    if (s.isDebt && !s.paid) return;
+                    const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
+                    if (date !== today) return;
+
+                    const amount = Number(s.total) || 0;
+                    total += amount;
+                    if ((s.paymentMethod || 'cash') === 'card') card += amount;
+                    else cash += amount;
                 });
 
-                closeCashModal();
-                await loadAll();
-            } catch (err) {
-                console.error('Naqd pul qo\'shish xatosi:', err);
-                alert("Naqd pul qo'shib bo'lmadi: " + (err?.message || err));
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = "Qo'shish";
+                // Manfiy AYIRISH/RESET yozuvlari ham DB'da saqlanadi.
+                // Shu sabab barcha qurilmalar bir xil net hisobni ko'radi.
+                const net = Math.max(0, total);
+                cash = Math.max(0, cash);
+                card = Math.max(0, card);
+
+                const cashEl = document.getElementById('todayCash');
+                const cardEl = document.getElementById('todayCard');
+                const summaryTotalEl = document.getElementById('todaySummaryTotal');
+                const netEl = document.getElementById('todayNet');
+                const headerTotal = document.querySelector('#todayTotal');
+
+                if (cashEl) cashEl.textContent = formatSum(cash) + " so'm";
+                if (cardEl) cardEl.textContent = formatSum(card) + " so'm";
+                if (summaryTotalEl) summaryTotalEl.textContent = formatSum(net) + " so'm";
+                if (netEl) netEl.textContent = formatSum(net) + " so'm";
+                if (headerTotal) headerTotal.textContent = formatSum(net);
+            }
+
+            function renderHistory() {
+                if (historyTab === 'days') renderHistoryDays();
+                else renderHistorySold();
+            }
+
+            function renderHistoryDays() {
+                const container = document.getElementById('historyList');
+                const byDate = {};
+                sales.forEach(s => {
+                    if (s.isDebt && !s.paid) return;
+                    const effDate = s.isDebt ? s.paidDate : s.date;
+                    if (!effDate) return;
+                    if (!byDate[effDate]) byDate[effDate] = [];
+                    byDate[effDate].push(s);
+                });
+
+                const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+                if (dates.length === 0) {
+                    container.innerHTML = `<div class="no-data">Hali to'lovlar tarixi yo'q.</div>`;
+                    updateHistorySelectAllState();
+                    return;
                 }
-            }
-        }
 
-        /* ============ HISTORY MODAL ============ */
-        let historyTab = 'days';
+                container.innerHTML = dates.map(date => {
+                    const daySales = byDate[date].sort((a, b) => (a.isDebt ? a.paidTime : a.time).localeCompare(b.isDebt ? b.paidTime : b.time));
+                    const dayTotal = Math.max(0, daySales.reduce((sum, x) => sum + (Number(x.total) || 0), 0));
+                    const dayCash = daySales.filter(x => !x.isDebt && (x.paymentMethod || 'cash') === 'cash').reduce((sum, x) => sum + Number(x.total || 0), 0);
+                    const dayCard = daySales.filter(x => !x.isDebt && x.paymentMethod === 'card').reduce((sum, x) => sum + Number(x.total || 0), 0);
 
-
-        function renderTodaySummary() {
-            const today = todayStr();
-            let cash = 0, card = 0, total = 0;
-
-            sales.forEach(s => {
-                if (s.isDebt && !s.paid) return;
-                const date = s.isDebt && s.paidDate ? s.paidDate : s.date;
-                if (date !== today) return;
-
-                const amount = Number(s.total) || 0;
-                total += amount;
-                if ((s.paymentMethod || 'cash') === 'card') card += amount;
-                else cash += amount;
-            });
-
-            // Manfiy AYIRISH/RESET yozuvlari ham DB'da saqlanadi.
-            // Shu sabab barcha qurilmalar bir xil net hisobni ko'radi.
-            const net = Math.max(0, total);
-            cash = Math.max(0, cash);
-            card = Math.max(0, card);
-
-            const cashEl = document.getElementById('todayCash');
-            const cardEl = document.getElementById('todayCard');
-            const summaryTotalEl = document.getElementById('todaySummaryTotal');
-            const netEl = document.getElementById('todayNet');
-            const headerTotal = document.querySelector('#todayTotal');
-
-            if (cashEl) cashEl.textContent = formatSum(cash) + " so'm";
-            if (cardEl) cardEl.textContent = formatSum(card) + " so'm";
-            if (summaryTotalEl) summaryTotalEl.textContent = formatSum(net) + " so'm";
-            if (netEl) netEl.textContent = formatSum(net) + " so'm";
-            if (headerTotal) headerTotal.textContent = formatSum(net);
-        }
-
-        function renderHistory() {
-            if (historyTab === 'days') renderHistoryDays();
-            else renderHistorySold();
-        }
-
-        function renderHistoryDays() {
-            const container = document.getElementById('historyList');
-            const byDate = {};
-            sales.forEach(s => {
-                if (s.isDebt && !s.paid) return;
-                const effDate = s.isDebt ? s.paidDate : s.date;
-                if (!effDate) return;
-                if (!byDate[effDate]) byDate[effDate] = [];
-                byDate[effDate].push(s);
-            });
-
-            const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
-            if (dates.length === 0) {
-                container.innerHTML = `<div class="no-data">Hali to'lovlar tarixi yo'q.</div>`;
-                updateHistorySelectAllState();
-                return;
-            }
-
-            container.innerHTML = dates.map(date => {
-                const daySales = byDate[date].sort((a, b) => (a.isDebt ? a.paidTime : a.time).localeCompare(b.isDebt ? b.paidTime : b.time));
-                const dayTotal = Math.max(0, daySales.reduce((sum, x) => sum + (Number(x.total) || 0), 0));
-                const dayCash = daySales.filter(x => !x.isDebt && (x.paymentMethod || 'cash') === 'cash').reduce((sum, x) => sum + Number(x.total || 0), 0);
-                const dayCard = daySales.filter(x => !x.isDebt && x.paymentMethod === 'card').reduce((sum, x) => sum + Number(x.total || 0), 0);
-
-                const receipts = daySales.map(sale => {
-                    const isAdjustment = sale.manual && Number(sale.total) < 0;
-                    if (isAdjustment) {
-                        return `
-        <div class="receipt adjustment">
-          <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
-          <span class="rtag">${sale.note === 'RESET' ? 'RESET' : 'Pul ayirildi'}</span>
-          <div class="rtime">${sale.time}${sale.note && sale.note !== 'RESET' && sale.note !== 'AYIRISH' ? ' · ' + escapeHtml(sale.note) : ''}</div>
-          <div class="rtotal"><span>Hisobdan ayirildi</span><span>${formatSum(Math.abs(sale.total))} so'm</span></div>
-          <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
-        </div>`;
-                    }
-                    if (sale.manual) {
-                        return `
-        <div class="receipt manual">
-          <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
-          <span class="rtag">Naqd pul</span>
-          <div class="rtime">${sale.time}${sale.note ? ' · ' + escapeHtml(sale.note) : ''}</div>
-          <div class="rtotal"><span>Qo'shildi</span><span>${formatSum(sale.total)} so'm</span></div>
-          <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
-        </div>`;
-                    }
-                    if (sale.isDebt) {
-                        return `
-        <div class="receipt manual">
-          <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
-          <span class="rtag">Qarz to'landi</span>
-          <div class="rtime">${sale.paidTime} · ${escapeHtml(sale.customerName || 'Mijoz')}</div>
-          ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
-          <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm${sale.paymentMethod === "card" ? " · 💳 Karta" : " · 🟠 Qarz"}</span></div>
-          <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
-        </div>`;
-                    }
-                    return `
-      <div class="receipt">
-        <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
-        <div class="rtime">${sale.time}</div>
-        ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
-        <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm</span></div>
-        <div class="payment-history-summary"><span class="payment-history-badge ${paymentClass(sale)}">${paymentLabel(sale)}</span></div>
-        <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
-      </div>`;
-                }).join('');
-
-                return `
-      <div class="day-row">
-        <div class="day-head" data-day="${date}">
-          <span class="d">${formatDateReadable(date)}</span>
-          <span class="t">${formatSum(dayTotal)} so'm</span>
-        </div>
-        <div class="history-payment-summary">
-          <span class="payment-history-badge payment-cash">💵 Naqd: ${formatSum(Math.max(0, dayCash))} so'm</span>
-          <span class="payment-history-badge payment-card">💳 Karta: ${formatSum(Math.max(0, dayCard))} so'm</span>
-          <span class="payment-history-badge">Jami: ${formatSum(dayTotal)} so'm</span>
-        </div>
-        <div class="day-body" id="daybody-${date}">${receipts}</div>
-      </div>`;
-            }).join('');
-            updateHistorySelectAllState();
-        }
-
-        function updateHistorySelectAllState() {
-            const boxes = [...document.querySelectorAll('#historyList [data-history-select]')];
-            const all = document.getElementById('selectAllHistory');
-            if (!all) return;
-            all.checked = boxes.length > 0 && boxes.every(x => x.checked);
-            all.indeterminate = boxes.some(x => x.checked) && !all.checked;
-        }
-
-        async function deleteSelectedHistory() {
-            const ids = [...document.querySelectorAll('#historyList [data-history-select]:checked')].map(x => x.dataset.historySelect);
-            if (!ids.length) {
-                alert("Avval tarixdan o'chiriladigan yozuvlarni tanlang.");
-                return;
-            }
-            if (!confirm(`${ids.length} ta tarix yozuvini o'chirmoqchimisiz?`)) return;
-            try {
-                for (const id of ids) await mockApi.deleteSale(id);
-                await loadAll();
-                renderHistory();
-            } catch (err) {
-                console.error("Tarixni o'chirish xatosi:", err);
-                alert("Tarixni o'chirib bo'lmadi: " + (err?.message || err));
-            }
-        }
-
-        async function clearHistory() {
-            if (!sales.length) {
-                alert("Tarix allaqachon bo'sh.");
-                return;
-            }
-            if (!confirm("Butun hisob tarixini barcha telefonlarda o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.")) return;
-            try {
-                await mockApi.deleteAllSales();
-                await loadAll();
-                renderHistory();
-            } catch (err) {
-                console.error('Tarixni tozalash xatosi:', err);
-                alert("Tarixni tozalab bo'lmadi: " + (err?.message || err));
-            }
-        }
-
-        function renderHistorySold() {
-            const container = document.getElementById('historyList');
-
-            // flatten every sold line item (excludes manual cash entries) across all sales
-            const lines = [];
-            sales.forEach(sale => {
-                if (sale.manual) return;
-                sale.items.forEach(it => lines.push({ ...it, date: sale.date, time: sale.time }));
-            });
-
-            if (lines.length === 0) {
-                container.innerHTML = `<div class="no-data">Hali sotilgan mahsulotlar yo'q.</div>`;
-                return;
-            }
-
-            // aggregate totals per product
-            const agg = {};
-            lines.forEach(it => {
-                if (!agg[it.name]) agg[it.name] = { unit: it.unit, qty: 0, revenue: 0 };
-                agg[it.name].qty += it.qty;
-                agg[it.name].revenue += it.subtotal;
-            });
-            const aggRows = Object.entries(agg)
-                .sort((a, b) => b[1].revenue - a[1].revenue)
-                .map(([name, v]) => `
-      <div class="sold-summary-row">
-        <span class="nm">${escapeHtml(name)} <span class="qv">(${fmtQty(v.qty, v.unit)}${v.unit === 'kg' ? 'kg' : ' dona'})</span></span>
-        <span class="rv">${formatSum(v.revenue)} so'm</span>
-      </div>
-    `).join('');
-
-            // chronological list, newest first
-            const chronoRows = lines
-                .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
-                .map(it => `
-      <div class="sold-line">
-        <div>
-          <div class="sl-name">${escapeHtml(it.name)}</div>
-          <div class="sl-meta">${formatDateReadable(it.date)} · ${it.time} · ${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ' dona'}</div>
-        </div>
-        <div class="sl-amt">${formatSum(it.subtotal)} so'm</div>
-      </div>
-    `).join('');
-
-            container.innerHTML = `<div class="sold-summary">${aggRows}</div>${chronoRows}`;
-        }
-
-
-        function paymentLabel(sale) {
-            if (sale.isDebt) return '🟠 Qarz';
-            return sale.paymentMethod === 'card' ? '💳 Karta' : '💵 Naqd';
-        }
-        function paymentClass(sale) {
-            if (sale.isDebt) return 'payment-debt';
-            return sale.paymentMethod === 'card' ? 'payment-card' : 'payment-cash';
-        }
-
-
-        async function migrateOldLocalDataToSupabase() {
-            const flag = 'supabase_migrated_v1';
-            if (localStorage.getItem(flag) === '1') return;
-
-            try {
-                const { count: pc, error: pe } = await supabaseClient.from('products').select('*', { count: 'exact', head: true });
-                if (pe) throw pe;
-
-                const oldProductsRaw = localStorage.getItem('ds_products');
-                const oldProducts = oldProductsRaw ? JSON.parse(oldProductsRaw) : [];
-                const idMap = {};
-
-                if ((pc || 0) === 0 && oldProducts.length) {
-                    for (const p of oldProducts) {
-                        const { data, error } = await supabaseClient.from('products').insert({
-                            name: p.name, price: Number(p.price || 0), unit: p.unit || 'dona', stock: Number(p.stock || 0)
-                        }).select().single();
-                        if (error) throw error;
-                        idMap[String(p.id)] = String(data.id);
-                    }
-
-                    const oldSalesRaw = localStorage.getItem('ds_sales');
-                    const oldSales = oldSalesRaw ? JSON.parse(oldSalesRaw) : [];
-
-                    for (const s of oldSales) {
-                        const { data: sale, error: se } = await supabaseClient.from('sales').insert({
-                            total: Number(s.total || 0),
-                            payment_type: s.paymentMethod || 'cash',
-                            date: s.date || null,
-                            time: s.time || null,
-                            is_debt: !!s.isDebt,
-                            paid: s.paid !== false,
-                            customer_name: s.customerName || '',
-                            note: s.note || '',
-                            manual: !!s.manual,
-                            paid_date: s.paidDate || null,
-                            paid_time: s.paidTime || null
-                        }).select().single();
-                        if (se) throw se;
-
-                        if (Array.isArray(s.items) && s.items.length) {
-                            const rows = s.items.map(it => ({
-                                sale_id: sale.id,
-                                product_id: idMap[String(it.productId)] ? Number(idMap[String(it.productId)]) : null,
-                                product_name: it.name,
-                                unit: it.unit,
-                                quantity: Number(it.qty || 0),
-                                subtotal: Number(it.subtotal || 0)
-                            }));
-                            const { error: ie } = await supabaseClient.from('sale_items').insert(rows);
-                            if (ie) throw ie;
+                    const receipts = daySales.map(sale => {
+                        const isAdjustment = sale.manual && Number(sale.total) < 0;
+                        if (isAdjustment) {
+                            return `
+            <div class="receipt adjustment">
+            <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
+            <span class="rtag">${sale.note === 'RESET' ? 'RESET' : 'Pul ayirildi'}</span>
+            <div class="rtime">${sale.time}${sale.note && sale.note !== 'RESET' && sale.note !== 'AYIRISH' ? ' · ' + escapeHtml(sale.note) : ''}</div>
+            <div class="rtotal"><span>Hisobdan ayirildi</span><span>${formatSum(Math.abs(sale.total))} so'm</span></div>
+            <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
+            </div>`;
                         }
-                    }
-                }
+                        if (sale.manual) {
+                            return `
+            <div class="receipt manual">
+            <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
+            <span class="rtag">Naqd pul</span>
+            <div class="rtime">${sale.time}${sale.note ? ' · ' + escapeHtml(sale.note) : ''}</div>
+            <div class="rtotal"><span>Qo'shildi</span><span>${formatSum(sale.total)} so'm</span></div>
+            <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
+            </div>`;
+                        }
+                        if (sale.isDebt) {
+                            return `
+            <div class="receipt manual">
+            <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
+            <span class="rtag">Qarz to'landi</span>
+            <div class="rtime">${sale.paidTime} · ${escapeHtml(sale.customerName || 'Mijoz')}</div>
+            ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
+            <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm${sale.paymentMethod === "card" ? " · 💳 Karta" : " · 🟠 Qarz"}</span></div>
+            <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
+            </div>`;
+                        }
+                        return `
+        <div class="receipt">
+            <div class="history-select-row"><input class="history-select" type="checkbox" data-history-select="${sale.id}"><span>Tanlash</span></div>
+            <div class="rtime">${sale.time}</div>
+            ${sale.items.map(it => `<div class="ritem"><span>${escapeHtml(it.name)} ×${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ''}</span><span>${formatSum(it.subtotal)}</span></div>`).join('')}
+            <div class="rtotal"><span>Jami</span><span>${formatSum(sale.total)} so'm</span></div>
+            <div class="payment-history-summary"><span class="payment-history-badge ${paymentClass(sale)}">${paymentLabel(sale)}</span></div>
+            <button class="receipt-delete" type="button" data-delete-history="${sale.id}">🗑 O'chirish</button>
+        </div>`;
+                    }).join('');
 
-                localStorage.setItem(flag, '1');
-            } catch (err) {
-                console.warn('Local maʼlumotlarni Supabase ga ko‘chirish xatosi:', err);
+                    return `
+        <div class="day-row">
+            <div class="day-head" data-day="${date}">
+            <span class="d">${formatDateReadable(date)}</span>
+            <span class="t">${formatSum(dayTotal)} so'm</span>
+            </div>
+            <div class="history-payment-summary">
+            <span class="payment-history-badge payment-cash">💵 Naqd: ${formatSum(Math.max(0, dayCash))} so'm</span>
+            <span class="payment-history-badge payment-card">💳 Karta: ${formatSum(Math.max(0, dayCard))} so'm</span>
+            <span class="payment-history-badge">Jami: ${formatSum(dayTotal)} so'm</span>
+            </div>
+            <div class="day-body" id="daybody-${date}">${receipts}</div>
+        </div>`;
+                }).join('');
+                updateHistorySelectAllState();
             }
-        }
 
-        /* ============ DATA LOADING ============ */
-        async function loadAll() {
-            await migrateOldLocalDataToSupabase();
-            [products, sales, cart] = await Promise.all([
-                mockApi.getProducts(),
-                mockApi.getSales(),
-                mockApi.getCart()
-            ]);
-            // clean cart of stale product ids
-            Object.keys(cart).forEach(id => { if (!products.find(p => String(p.id) === String(id))) delete cart[id]; });
-            renderGrid();
-            renderCartBar();
-            renderTodayTotal();
-            renderTopStats();
-        }
+            function updateHistorySelectAllState() {
+                const boxes = [...document.querySelectorAll('#historyList [data-history-select]')];
+                const all = document.getElementById('selectAllHistory');
+                if (!all) return;
+                all.checked = boxes.length > 0 && boxes.every(x => x.checked);
+                all.indeterminate = boxes.some(x => x.checked) && !all.checked;
+            }
 
-        /* ============ EVENTS ============ */
-        let cartBarClosed = false;
-
-        function setCartBarClosed(closed) {
-            cartBarClosed = !!closed;
-            const bar = document.getElementById('cartBar');
-            const toggle = document.getElementById('openCartBar');
-            if (!bar || !toggle) return;
-            bar.classList.toggle('is-closed', cartBarClosed);
-            toggle.classList.toggle('show', cartBarClosed && Object.keys(cart).some(id => Number(cart[id]) > 0));
-        }
-
-        document.getElementById('closeCartBar').addEventListener('click', () => setCartBarClosed(true));
-        document.getElementById('openCartBar').addEventListener('click', () => setCartBarClosed(false));
-
-        document.getElementById('searchInput').addEventListener('input', e => {
-            searchTerm = e.target.value;
-            renderGrid();
-        });
-
-        document.getElementById('addProductBtn').addEventListener('click', () => openProductModal(null));
-        document.getElementById('closeProductModal').addEventListener('click', closeProductModal);
-        document.getElementById('productOverlay').addEventListener('click', e => { if (e.target.id === 'productOverlay') closeProductModal(); });
-        document.getElementById('unitDona').addEventListener('click', () => setUnitSwitch('dona'));
-        document.getElementById('unitKg').addEventListener('click', () => setUnitSwitch('kg'));
-        document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
-        document.getElementById('deleteProductBtn').addEventListener('click', deleteProduct);
-
-
-
-        document.getElementById('todaySubtractBtn2').addEventListener('click', openTodayAdjustModal);
-        document.getElementById('todayResetBtn2').addEventListener('click', resetTodayMoney);
-        document.getElementById('todayResetBtn').addEventListener('click', resetTodayMoney);
-        document.getElementById('todaySubtractBtn').addEventListener('click', openTodayAdjustModal);
-        document.getElementById('closeTodayAdjust').addEventListener('click', closeTodayAdjustModal);
-        document.getElementById('cancelTodayAdjust').addEventListener('click', closeTodayAdjustModal);
-        document.getElementById('saveTodayAdjust').addEventListener('click', saveTodayAdjustment);
-        document.getElementById('todayAdjustOverlay').addEventListener('click', e => {
-            if (e.target.id === 'todayAdjustOverlay') closeTodayAdjustModal();
-        });
-
-        document.getElementById('subtractTotalBtn').addEventListener('click', openAdjustModal);
-        document.getElementById('resetTotalBtn').addEventListener('click', resetCurrentTotal);
-        document.getElementById('closeAdjustModal').addEventListener('click', closeAdjustModal);
-        document.getElementById('cancelAdjustBtn').addEventListener('click', closeAdjustModal);
-        document.getElementById('saveAdjustBtn').addEventListener('click', saveAdjustment);
-        document.getElementById('adjustOverlay').addEventListener('click', e => {
-            if (e.target.id === 'adjustOverlay') closeAdjustModal();
-        });
-
-        document.getElementById('cancelCartBtn').addEventListener('click', cancelCart);
-        document.getElementById('cashPayBtn').addEventListener('click', () => payCart('cash'));
-        document.getElementById('cardPayBtn').addEventListener('click', () => payCart('card'));
-        document.getElementById('debtBtn').addEventListener('click', openDebtModal);
-        document.getElementById('closeDebtModal').addEventListener('click', closeDebtModal);
-        document.getElementById('debtOverlay').addEventListener('click', e => { if (e.target.id === 'debtOverlay') closeDebtModal(); });
-        document.getElementById('saveDebtBtn').addEventListener('click', saveDebt);
-
-        document.getElementById('debtorsBtn').addEventListener('click', () => {
-            renderDebtors();
-            document.getElementById('debtorsOverlay').classList.add('show');
-        });
-        document.getElementById('closeDebtorsModal').addEventListener('click', () => {
-            document.getElementById('debtorsOverlay').classList.remove('show');
-        });
-        document.getElementById('debtorsOverlay').addEventListener('click', e => { if (e.target.id === 'debtorsOverlay') document.getElementById('debtorsOverlay').classList.remove('show'); });
-        document.getElementById('debtorsList').addEventListener('click', e => {
-            const btn = e.target.closest('[data-settle]');
-            if (!btn) return;
-            settleDebt(btn.dataset.settle);
-        });
-
-        document.getElementById('addCashBtn').addEventListener('click', openCashModal);
-        document.getElementById('closeCashModal').addEventListener('click', closeCashModal);
-        document.getElementById('cashOverlay').addEventListener('click', e => { if (e.target.id === 'cashOverlay') closeCashModal(); });
-        const saveCashBtnEl = document.getElementById('saveCashBtn');
-        if (saveCashBtnEl) saveCashBtnEl.addEventListener('click', window.saveCash);
-
-        document.getElementById('historyBtn').addEventListener('click', () => {
-            historyTab = 'days';
-            document.getElementById('tabDays').classList.add('active');
-            document.getElementById('tabSold').classList.remove('active');
-            renderHistory();
-            document.getElementById('historyOverlay').classList.add('show');
-        });
-        document.getElementById('closeHistoryModal').addEventListener('click', () => {
-            document.getElementById('historyOverlay').classList.remove('show');
-        });
-        document.getElementById('historyOverlay').addEventListener('click', e => { if (e.target.id === 'historyOverlay') document.getElementById('historyOverlay').classList.remove('show'); });
-        document.querySelector('.tabs').addEventListener('click', e => {
-            const btn = e.target.closest('button[data-tab]');
-            if (!btn) return;
-            historyTab = btn.dataset.tab;
-            document.getElementById('tabDays').classList.toggle('active', historyTab === 'days');
-            document.getElementById('tabSold').classList.toggle('active', historyTab === 'sold');
-            renderHistory();
-        });
-
-        document.getElementById('deleteSelectedHistoryBtn').addEventListener('click', deleteSelectedHistory);
-        document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
-        document.getElementById('selectAllHistory').addEventListener('change', e => {
-            document.querySelectorAll('#historyList [data-history-select]').forEach(box => box.checked = e.target.checked);
-            updateHistorySelectAllState();
-        });
-
-        document.getElementById('historyList').addEventListener('change', e => {
-            if (e.target.matches('[data-history-select]')) updateHistorySelectAllState();
-        });
-
-        document.getElementById('historyList').addEventListener('click', async e => {
-            const deleteBtn = e.target.closest('[data-delete-history]');
-            if (deleteBtn) {
-                e.stopPropagation();
-                const id = deleteBtn.dataset.deleteHistory;
-                if (!confirm("Shu tarix yozuvini o'chirmoqchimisiz?")) return;
+            async function deleteSelectedHistory() {
+                const ids = [...document.querySelectorAll('#historyList [data-history-select]:checked')].map(x => x.dataset.historySelect);
+                if (!ids.length) {
+                    alert("Avval tarixdan o'chiriladigan yozuvlarni tanlang.");
+                    return;
+                }
+                if (!confirm(`${ids.length} ta tarix yozuvini o'chirmoqchimisiz?`)) return;
                 try {
-                    await mockApi.deleteSale(id);
+                    for (const id of ids) await mockApi.deleteSale(id);
                     await loadAll();
                     renderHistory();
                 } catch (err) {
-                    console.error("Tarix yozuvini o'chirish xatosi:", err);
-                    alert("O'chirib bo'lmadi: " + (err?.message || err));
+                    console.error("Tarixni o'chirish xatosi:", err);
+                    alert("Tarixni o'chirib bo'lmadi: " + (err?.message || err));
                 }
-                return;
             }
-            const head = e.target.closest('.day-head');
-            if (!head) return;
-            const date = head.dataset.day;
-            document.getElementById('daybody-' + date).classList.toggle('open');
-        });
+
+            async function clearHistory() {
+                if (!sales.length) {
+                    alert("Tarix allaqachon bo'sh.");
+                    return;
+                }
+                if (!confirm("Butun hisob tarixini barcha telefonlarda o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.")) return;
+                try {
+                    await mockApi.deleteAllSales();
+                    await loadAll();
+                    renderHistory();
+                } catch (err) {
+                    console.error('Tarixni tozalash xatosi:', err);
+                    alert("Tarixni tozalab bo'lmadi: " + (err?.message || err));
+                }
+            }
+
+            function renderHistorySold() {
+                const container = document.getElementById('historyList');
+
+                // flatten every sold line item (excludes manual cash entries) across all sales
+                const lines = [];
+                sales.forEach(sale => {
+                    if (sale.manual) return;
+                    sale.items.forEach(it => lines.push({ ...it, date: sale.date, time: sale.time }));
+                });
+
+                if (lines.length === 0) {
+                    container.innerHTML = `<div class="no-data">Hali sotilgan mahsulotlar yo'q.</div>`;
+                    return;
+                }
+
+                // aggregate totals per product
+                const agg = {};
+                lines.forEach(it => {
+                    if (!agg[it.name]) agg[it.name] = { unit: it.unit, qty: 0, revenue: 0 };
+                    agg[it.name].qty += it.qty;
+                    agg[it.name].revenue += it.subtotal;
+                });
+                const aggRows = Object.entries(agg)
+                    .sort((a, b) => b[1].revenue - a[1].revenue)
+                    .map(([name, v]) => `
+        <div class="sold-summary-row">
+            <span class="nm">${escapeHtml(name)} <span class="qv">(${fmtQty(v.qty, v.unit)}${v.unit === 'kg' ? 'kg' : ' dona'})</span></span>
+            <span class="rv">${formatSum(v.revenue)} so'm</span>
+        </div>
+        `).join('');
+
+                // chronological list, newest first
+                const chronoRows = lines
+                    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time))
+                    .map(it => `
+        <div class="sold-line">
+            <div>
+            <div class="sl-name">${escapeHtml(it.name)}</div>
+            <div class="sl-meta">${formatDateReadable(it.date)} · ${it.time} · ${fmtQty(it.qty, it.unit)}${it.unit === 'kg' ? 'kg' : ' dona'}</div>
+            </div>
+            <div class="sl-amt">${formatSum(it.subtotal)} so'm</div>
+        </div>
+        `).join('');
+
+                container.innerHTML = `<div class="sold-summary">${aggRows}</div>${chronoRows}`;
+            }
 
 
-        document.getElementById('cartItems').addEventListener('click', async e => {
-            const removeBtn = e.target.closest('[data-cart-remove]');
-            const plusBtn = e.target.closest('[data-cart-plus]');
-            const minusBtn = e.target.closest('[data-cart-minus]');
+            function paymentLabel(sale) {
+                if (sale.isDebt) return '🟠 Qarz';
+                return sale.paymentMethod === 'card' ? '💳 Karta' : '💵 Naqd';
+            }
+            function paymentClass(sale) {
+                if (sale.isDebt) return 'payment-debt';
+                return sale.paymentMethod === 'card' ? 'payment-card' : 'payment-cash';
+            }
 
-            if (removeBtn) {
-                const id = String(removeBtn.dataset.cartRemove);
-                delete cart[id];
-                await mockApi.saveCart(cart);
+
+            async function migrateOldLocalDataToSupabase() {
+                const flag = 'supabase_migrated_v1';
+                if (localStorage.getItem(flag) === '1') return;
+
+                try {
+                    const { count: pc, error: pe } = await supabaseClient.from('products').select('*', { count: 'exact', head: true });
+                    if (pe) throw pe;
+
+                    const oldProductsRaw = localStorage.getItem('ds_products');
+                    const oldProducts = oldProductsRaw ? JSON.parse(oldProductsRaw) : [];
+                    const idMap = {};
+
+                    if ((pc || 0) === 0 && oldProducts.length) {
+                        for (const p of oldProducts) {
+                            const { data, error } = await supabaseClient.from('products').insert({
+                                name: p.name, price: Number(p.price || 0), unit: p.unit || 'dona', stock: Number(p.stock || 0)
+                            }).select().single();
+                            if (error) throw error;
+                            idMap[String(p.id)] = String(data.id);
+                        }
+
+                        const oldSalesRaw = localStorage.getItem('ds_sales');
+                        const oldSales = oldSalesRaw ? JSON.parse(oldSalesRaw) : [];
+
+                        for (const s of oldSales) {
+                            const { data: sale, error: se } = await supabaseClient.from('sales').insert({
+                                total: Number(s.total || 0),
+                                payment_type: s.paymentMethod || 'cash',
+                                date: s.date || null,
+                                time: s.time || null,
+                                is_debt: !!s.isDebt,
+                                paid: s.paid !== false,
+                                customer_name: s.customerName || '',
+                                note: s.note || '',
+                                manual: !!s.manual,
+                                paid_date: s.paidDate || null,
+                                paid_time: s.paidTime || null
+                            }).select().single();
+                            if (se) throw se;
+
+                            if (Array.isArray(s.items) && s.items.length) {
+                                const rows = s.items.map(it => ({
+                                    sale_id: sale.id,
+                                    product_id: idMap[String(it.productId)] ? Number(idMap[String(it.productId)]) : null,
+                                    product_name: it.name,
+                                    unit: it.unit,
+                                    quantity: Number(it.qty || 0),
+                                    subtotal: Number(it.subtotal || 0)
+                                }));
+                                const { error: ie } = await supabaseClient.from('sale_items').insert(rows);
+                                if (ie) throw ie;
+                            }
+                        }
+                    }
+
+                    localStorage.setItem(flag, '1');
+                } catch (err) {
+                    console.warn('Local maʼlumotlarni Supabase ga ko‘chirish xatosi:', err);
+                }
+            }
+
+            /* ============ DATA LOADING ============ */
+            async function loadAll() {
+                await migrateOldLocalDataToSupabase();
+                [products, sales, cart] = await Promise.all([
+                    mockApi.getProducts(),
+                    mockApi.getSales(),
+                    mockApi.getCart()
+                ]);
+                // clean cart of stale product ids
+                Object.keys(cart).forEach(id => { if (!products.find(p => String(p.id) === String(id))) delete cart[id]; });
                 renderGrid();
                 renderCartBar();
-                return;
+                renderTodayTotal();
+                renderTopStats();
             }
 
-            if (plusBtn) {
-                const id = String(plusBtn.dataset.cartPlus);
-                const p = products.find(pp => String(pp.id) === id);
-                if (p) await changeQty(id, step(p.unit));
-                return;
+            /* ============ EVENTS ============ */
+            let cartBarClosed = false;
+
+            function setCartBarClosed(closed) {
+                cartBarClosed = !!closed;
+                const bar = document.getElementById('cartBar');
+                const toggle = document.getElementById('openCartBar');
+                if (!bar || !toggle) return;
+                bar.classList.toggle('is-closed', cartBarClosed);
+                toggle.classList.toggle('show', cartBarClosed && Object.keys(cart).some(id => Number(cart[id]) > 0));
             }
 
-            if (minusBtn) {
-                const id = String(minusBtn.dataset.cartMinus);
-                const p = products.find(pp => String(pp.id) === id);
-                if (p) await changeQty(id, -step(p.unit));
-            }
-        });
+            document.getElementById('closeCartBar').addEventListener('click', () => setCartBarClosed(true));
+            document.getElementById('openCartBar').addEventListener('click', () => setCartBarClosed(false));
 
-        document.getElementById('productGrid').addEventListener('change', e => {
-            const input = e.target.closest('[data-kgqty]');
-            if (!input) return;
-            setKgQtyFromGrams(input.dataset.kgqty, input.value);
-        });
+            document.getElementById('searchInput').addEventListener('input', e => {
+                searchTerm = e.target.value;
+                renderGrid();
+            });
 
-        document.getElementById('productGrid').addEventListener('click', async e => {
-            const plusBtn = e.target.closest('[data-plus]');
-            const minusBtn = e.target.closest('[data-minus]');
-            const editBtn = e.target.closest('[data-edit]');
-            const removeProductBtn = e.target.closest('[data-remove-product]');
-            const qtyField = e.target.closest('[data-qtyfield]');
-            const kgQty = e.target.closest('[data-kgqty]');
+            document.getElementById('addProductBtn').addEventListener('click', () => openProductModal(null));
+            document.getElementById('closeProductModal').addEventListener('click', closeProductModal);
+            document.getElementById('productOverlay').addEventListener('click', e => { if (e.target.id === 'productOverlay') closeProductModal(); });
+            document.getElementById('unitDona').addEventListener('click', () => setUnitSwitch('dona'));
+            document.getElementById('unitKg').addEventListener('click', () => setUnitSwitch('kg'));
+            document.getElementById('saveProductBtn').addEventListener('click', saveProduct);
+            document.getElementById('deleteProductBtn').addEventListener('click', deleteProduct);
 
-            if (removeProductBtn) {
-                const id = removeProductBtn.dataset.removeProduct;
-                if (confirm("Bu mahsulotni o'chirmoqchimisiz?")) {
-                    await mockApi.deleteProduct(id);
-                    await loadAll();
+
+
+            document.getElementById('todaySubtractBtn2').addEventListener('click', openTodayAdjustModal);
+            document.getElementById('todayResetBtn2').addEventListener('click', resetTodayMoney);
+            document.getElementById('todayResetBtn').addEventListener('click', resetTodayMoney);
+            document.getElementById('todaySubtractBtn').addEventListener('click', openTodayAdjustModal);
+            document.getElementById('closeTodayAdjust').addEventListener('click', closeTodayAdjustModal);
+            document.getElementById('cancelTodayAdjust').addEventListener('click', closeTodayAdjustModal);
+            document.getElementById('saveTodayAdjust').addEventListener('click', saveTodayAdjustment);
+            document.getElementById('todayAdjustOverlay').addEventListener('click', e => {
+                if (e.target.id === 'todayAdjustOverlay') closeTodayAdjustModal();
+            });
+
+            document.getElementById('subtractTotalBtn').addEventListener('click', openAdjustModal);
+            document.getElementById('resetTotalBtn').addEventListener('click', resetCurrentTotal);
+            document.getElementById('closeAdjustModal').addEventListener('click', closeAdjustModal);
+            document.getElementById('cancelAdjustBtn').addEventListener('click', closeAdjustModal);
+            document.getElementById('saveAdjustBtn').addEventListener('click', saveAdjustment);
+            document.getElementById('adjustOverlay').addEventListener('click', e => {
+                if (e.target.id === 'adjustOverlay') closeAdjustModal();
+            });
+
+            document.getElementById('cancelCartBtn').addEventListener('click', cancelCart);
+            document.getElementById('cashPayBtn').addEventListener('click', () => payCart('cash'));
+            document.getElementById('cardPayBtn').addEventListener('click', () => payCart('card'));
+            document.getElementById('debtBtn').addEventListener('click', openDebtModal);
+            document.getElementById('closeDebtModal').addEventListener('click', closeDebtModal);
+            document.getElementById('debtOverlay').addEventListener('click', e => { if (e.target.id === 'debtOverlay') closeDebtModal(); });
+            document.getElementById('saveDebtBtn').addEventListener('click', saveDebt);
+
+            document.getElementById('debtorsBtn').addEventListener('click', () => {
+                renderDebtors();
+                document.getElementById('debtorsOverlay').classList.add('show');
+            });
+            document.getElementById('closeDebtorsModal').addEventListener('click', () => {
+                document.getElementById('debtorsOverlay').classList.remove('show');
+            });
+            document.getElementById('debtorsOverlay').addEventListener('click', e => { if (e.target.id === 'debtorsOverlay') document.getElementById('debtorsOverlay').classList.remove('show'); });
+            document.getElementById('debtorsList').addEventListener('click', e => {
+                const btn = e.target.closest('[data-settle]');
+                if (!btn) return;
+                settleDebt(btn.dataset.settle);
+            });
+
+            document.getElementById('addCashBtn').addEventListener('click', openCashModal);
+            document.getElementById('closeCashModal').addEventListener('click', closeCashModal);
+            document.getElementById('cashOverlay').addEventListener('click', e => { if (e.target.id === 'cashOverlay') closeCashModal(); });
+            const saveCashBtnEl = document.getElementById('saveCashBtn');
+            if (saveCashBtnEl) saveCashBtnEl.addEventListener('click', window.saveCash);
+
+            document.getElementById('historyBtn').addEventListener('click', () => {
+                historyTab = 'days';
+                document.getElementById('tabDays').classList.add('active');
+                document.getElementById('tabSold').classList.remove('active');
+                renderHistory();
+                document.getElementById('historyOverlay').classList.add('show');
+            });
+            document.getElementById('closeHistoryModal').addEventListener('click', () => {
+                document.getElementById('historyOverlay').classList.remove('show');
+            });
+            document.getElementById('historyOverlay').addEventListener('click', e => { if (e.target.id === 'historyOverlay') document.getElementById('historyOverlay').classList.remove('show'); });
+            document.querySelector('.tabs').addEventListener('click', e => {
+                const btn = e.target.closest('button[data-tab]');
+                if (!btn) return;
+                historyTab = btn.dataset.tab;
+                document.getElementById('tabDays').classList.toggle('active', historyTab === 'days');
+                document.getElementById('tabSold').classList.toggle('active', historyTab === 'sold');
+                renderHistory();
+            });
+
+            document.getElementById('deleteSelectedHistoryBtn').addEventListener('click', deleteSelectedHistory);
+            document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+            document.getElementById('selectAllHistory').addEventListener('change', e => {
+                document.querySelectorAll('#historyList [data-history-select]').forEach(box => box.checked = e.target.checked);
+                updateHistorySelectAllState();
+            });
+
+            document.getElementById('historyList').addEventListener('change', e => {
+                if (e.target.matches('[data-history-select]')) updateHistorySelectAllState();
+            });
+
+            document.getElementById('historyList').addEventListener('click', async e => {
+                const deleteBtn = e.target.closest('[data-delete-history]');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const id = deleteBtn.dataset.deleteHistory;
+                    if (!confirm("Shu tarix yozuvini o'chirmoqchimisiz?")) return;
+                    try {
+                        await mockApi.deleteSale(id);
+                        await loadAll();
+                        renderHistory();
+                    } catch (err) {
+                        console.error("Tarix yozuvini o'chirish xatosi:", err);
+                        alert("O'chirib bo'lmadi: " + (err?.message || err));
+                    }
+                    return;
                 }
-            } else if (plusBtn) {
-                const id = plusBtn.dataset.plus;
-                const p = products.find(pp => String(pp.id) === String(id));
-                changeQty(id, step(p.unit));
-            } else if (minusBtn) {
-                const id = minusBtn.dataset.minus;
-                const p = products.find(pp => String(pp.id) === String(id));
-                changeQty(id, -step(p.unit));
-            } else if (editBtn) {
-                const id = editBtn.dataset.edit;
-                const p = products.find(pp => String(pp.id) === String(id));
-                if (p) openProductModal(p);
-            } else if (qtyField) {
-                setExactQty(qtyField.dataset.qtyfield);
-            } else if (kgQty) {
-                kgQty.focus();
-                kgQty.select();
-            }
-        });
+                const head = e.target.closest('.day-head');
+                if (!head) return;
+                const date = head.dataset.day;
+                document.getElementById('daybody-' + date).classList.toggle('open');
+            });
 
-        /* ============ DAILY REFRESH ============ */
-        setInterval(renderTodayTotal, 60000);
-        setInterval(renderTopStats, 60000);
 
-        /* ============ INIT ============ */
-        loadAll().catch(err => {
-            console.error('Supabase xatosi:', err);
-            alert("Supabase ulanishida xatolik: " + (err.message || err));
-        });
+            document.getElementById('cartItems').addEventListener('click', async e => {
+                const removeBtn = e.target.closest('[data-cart-remove]');
+                const plusBtn = e.target.closest('[data-cart-plus]');
+                const minusBtn = e.target.closest('[data-cart-minus]');
 
-        document.addEventListener('click', function (e) {
-            const btn = e.target.closest('#todayResetBtn2, #todayResetBtn');
-            if (btn) {
-                e.preventDefault();
-                resetTodayMoney();
-            }
-        });
+                if (removeBtn) {
+                    const id = String(removeBtn.dataset.cartRemove);
+                    delete cart[id];
+                    await mockApi.saveCart(cart);
+                    renderGrid();
+                    renderCartBar();
+                    return;
+                }
 
-    </script>
+                if (plusBtn) {
+                    const id = String(plusBtn.dataset.cartPlus);
+                    const p = products.find(pp => String(pp.id) === id);
+                    if (p) await changeQty(id, step(p.unit));
+                    return;
+                }
+
+                if (minusBtn) {
+                    const id = String(minusBtn.dataset.cartMinus);
+                    const p = products.find(pp => String(pp.id) === id);
+                    if (p) await changeQty(id, -step(p.unit));
+                }
+            });
+
+            document.getElementById('productGrid').addEventListener('change', e => {
+                const input = e.target.closest('[data-kgqty]');
+                if (!input) return;
+                setKgQtyFromGrams(input.dataset.kgqty, input.value);
+            });
+
+            document.getElementById('productGrid').addEventListener('click', async e => {
+                const plusBtn = e.target.closest('[data-plus]');
+                const minusBtn = e.target.closest('[data-minus]');
+                const editBtn = e.target.closest('[data-edit]');
+                const removeProductBtn = e.target.closest('[data-remove-product]');
+                const qtyField = e.target.closest('[data-qtyfield]');
+                const kgQty = e.target.closest('[data-kgqty]');
+
+                if (removeProductBtn) {
+                    const id = removeProductBtn.dataset.removeProduct;
+                    if (confirm("Bu mahsulotni o'chirmoqchimisiz?")) {
+                        await mockApi.deleteProduct(id);
+                        await loadAll();
+                    }
+                } else if (plusBtn) {
+                    const id = plusBtn.dataset.plus;
+                    const p = products.find(pp => String(pp.id) === String(id));
+                    changeQty(id, step(p.unit));
+                } else if (minusBtn) {
+                    const id = minusBtn.dataset.minus;
+                    const p = products.find(pp => String(pp.id) === String(id));
+                    changeQty(id, -step(p.unit));
+                } else if (editBtn) {
+                    const id = editBtn.dataset.edit;
+                    const p = products.find(pp => String(pp.id) === String(id));
+                    if (p) openProductModal(p);
+                } else if (qtyField) {
+                    setExactQty(qtyField.dataset.qtyfield);
+                } else if (kgQty) {
+                    kgQty.focus();
+                    kgQty.select();
+                }
+            });
+
+            /* ============ DAILY REFRESH ============ */
+            setInterval(renderTodayTotal, 60000);
+            setInterval(renderTopStats, 60000);
+
+            /* ============ INIT ============ */
+            loadAll().catch(err => {
+                console.error('Supabase xatosi:', err);
+                alert("Supabase ulanishida xatolik: " + (err.message || err));
+            });
+
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('#todayResetBtn2, #todayResetBtn');
+                if (btn) {
+                    e.preventDefault();
+                    resetTodayMoney();
+                }
+            });
+
+        </script>
 </body>
 
 </html>
